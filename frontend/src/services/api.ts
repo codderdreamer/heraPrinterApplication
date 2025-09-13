@@ -57,6 +57,13 @@ class ApiService {
   async healthCheck(): Promise<{ status: string; message: string }> {
     return this.request<{ status: string; message: string }>('/health');
   }
+
+  async saveBitmapSettings(settings: any): Promise<void> {
+    return this.request<void>('/bitmap-settings', {
+      method: 'POST',
+      body: JSON.stringify(settings),
+    });
+  }
 }
 
 export const apiService = new ApiService();

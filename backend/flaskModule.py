@@ -126,6 +126,31 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
+        @self.app.route("/api/bitmap-settings", methods=['POST'])
+        def save_bitmap_settings():
+            try:
+                data = request.get_json()
+                ip = data.get('ip')
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
+                # Önce mevcut printer'ı bul
+                existing_printer = self.application.printers.get_printer_by_ip(ip)
+                if not existing_printer:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                # Bitmap ayarlarını kaydet (şimdilik sadece log)
+                print(f"Bitmap settings for printer {ip}:")
+                print(f"Text items: {data.get('textItems', [])}")
+                print(f"Icon items: {data.get('iconItems', [])}")
+                print(f"Barcode items: {data.get('barcodeItems', [])}")
+                
+                return jsonify({"message": "Bitmap settings saved successfully"})
+                
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+        
     def run(self):
         try:
             print("Flask server starting on http://127.0.0.1:8080")
@@ -137,6 +162,7 @@ class FlaskModule:
             print("  PUT  /api/printers/<ip> - Update printer by IP")
             print("  DELETE /api/printers/<ip> - Delete printer by IP")
             print("  GET  /api/health - Health check")
+            print("  POST /api/bitmap-settings - Save bitmap settings")
             self.app.run(use_reloader=False, host="127.0.0.1", port=8080, threaded=False)
         except Exception as e:
             print("FlaskServer.py run Exception:", e)

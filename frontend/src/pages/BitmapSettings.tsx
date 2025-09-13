@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Printer } from '../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Printer, apiService } from '../services/api';
 import '../styles/pages/BitmapSettings.css';
 
 interface BitmapSettingsProps {
@@ -48,6 +48,40 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const [barcodeItems, setBarcodeItems] = useState<BarcodeItem[]>([]);
   const [nextBarcodeId, setNextBarcodeId] = useState(1);
+
+  const [saveStatus, setSaveStatus] = useState<string>('');
+
+  // Otomatik kaydetme fonksiyonu
+  const saveSettings = useCallback(async () => {
+    try {
+      const settings = {
+        textItems,
+        iconItems,
+        barcodeItems
+      };
+      
+      await apiService.saveBitmapSettings({ ...settings, ip: printer.ip });
+      setSaveStatus('Kaydedildi');
+      
+      // 2 saniye sonra status'u temizle
+      setTimeout(() => setSaveStatus(''), 2000);
+    } catch (error) {
+      console.error('Error saving bitmap settings:', error);
+      setSaveStatus('Hata!');
+      setTimeout(() => setSaveStatus(''), 2000);
+    }
+  }, [textItems, iconItems, barcodeItems, printer.ip]);
+
+  // Form değişikliklerini otomatik kaydet
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (textItems.length > 0 || iconItems.length > 0 || barcodeItems.length > 0) {
+        saveSettings();
+      }
+    }, 1000); // 1 saniye bekle
+
+    return () => clearTimeout(timeoutId);
+  }, [textItems, iconItems, barcodeItems, saveSettings]);
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -151,6 +185,15 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       <div className="settings-header">
         <button onClick={onBack} className="btn-back">← Geri</button>
         <h2>Bitmap Ayarları - {printer.name}</h2>
+        {saveStatus && (
+          <span className="save-status" style={{ 
+            color: saveStatus === 'Kaydedildi' ? '#4CAF50' : '#f44336',
+            marginLeft: '1rem',
+            fontSize: '0.9rem'
+          }}>
+            {saveStatus}
+          </span>
+        )}
       </div>
 
       <div className="settings-content">
@@ -390,10 +433,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   >
                     <option value="code128">Code 128</option>
                     <option value="code39">Code 39</option>
-                    
                     <option value="qr">QR Code</option>
-                    
-                    
                   </select>
                 </div>
                 <div className="form-group">
