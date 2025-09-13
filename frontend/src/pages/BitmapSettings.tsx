@@ -10,9 +10,10 @@ interface BitmapSettingsProps {
 const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [textInfo, setTextInfo] = useState({
     content: '',
+    x: 0,
+    y: 0,
     fontSize: 12,
-    fontFamily: 'Arial',
-    color: '#000000'
+    fontFamily: 'Arial'
   });
 
   const [iconInfo, setIconInfo] = useState({
@@ -28,6 +29,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     width: 2
   });
 
+  const [showTextFields, setShowTextFields] = useState(false);
+
   const handleTextChange = (field: string, value: string | number) => {
     setTextInfo(prev => ({ ...prev, [field]: value }));
   };
@@ -38,6 +41,10 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const handleBarcodeChange = (field: string, value: string | number) => {
     setBarcodeInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  const toggleTextFields = () => {
+    setShowTextFields(!showTextFields);
   };
 
   // Bitmap boyutlarını hesapla (mm'den pixel'e)
@@ -55,45 +62,69 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       <div className="settings-content">
         <div className="settings-panel">
           <div className="settings-section">
-            <h3>Text Bilgileri</h3>
-            <div className="form-group">
-              <label>İçerik:</label>
-              <textarea
-                value={textInfo.content}
-                onChange={(e) => handleTextChange('content', e.target.value)}
-                placeholder="Yazılacak metin..."
-              />
-            </div>
-            <div className="form-group">
-              <label>Font Boyutu:</label>
-              <input
-                type="number"
-                value={textInfo.fontSize}
-                onChange={(e) => handleTextChange('fontSize', parseInt(e.target.value))}
-                min="8"
-                max="72"
-              />
-            </div>
-            <div className="form-group">
-              <label>Font Ailesi:</label>
-              <select
-                value={textInfo.fontFamily}
-                onChange={(e) => handleTextChange('fontFamily', e.target.value)}
+            <div className="section-header">
+              <h3>Text Bilgileri</h3>
+              <button 
+                className="toggle-btn"
+                onClick={toggleTextFields}
               >
-                <option value="Arial">Arial</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Courier New">Courier New</option>
-                <option value="Helvetica">Helvetica</option>
-              </select>
+                {showTextFields ? '−' : '+'}
+              </button>
             </div>
-            <div className="form-group">
-              <label>Renk:</label>
-              <input
-                type="color"
-                value={textInfo.color}
-                onChange={(e) => handleTextChange('color', e.target.value)}
-              />
-            </div>
+            
+            {showTextFields && (
+              <div className="form-fields">
+                <div className="form-group">
+                  <label>Text:</label>
+                  <input
+                    type="text"
+                    value={textInfo.content}
+                    onChange={(e) => handleTextChange('content', e.target.value)}
+                    placeholder="Yazılacak metin..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>X Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={textInfo.x}
+                    onChange={(e) => handleTextChange('x', parseInt(e.target.value) || 0)}
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Y Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={textInfo.y}
+                    onChange={(e) => handleTextChange('y', parseInt(e.target.value) || 0)}
+                    min="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Boyutu:</label>
+                  <input
+                    type="number"
+                    value={textInfo.fontSize}
+                    onChange={(e) => handleTextChange('fontSize', parseInt(e.target.value))}
+                    min="8"
+                    max="72"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Ailesi:</label>
+                  <select
+                    value={textInfo.fontFamily}
+                    onChange={(e) => handleTextChange('fontFamily', e.target.value)}
+                  >
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Helvetica">Helvetica</option>
+                  </select>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="settings-section">
@@ -190,9 +221,12 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 <div 
                   className="preview-text"
                   style={{
+                    position: 'absolute',
+                    left: `${textInfo.x}px`,
+                    top: `${textInfo.y}px`,
                     fontSize: `${textInfo.fontSize}px`,
                     fontFamily: textInfo.fontFamily,
-                    color: textInfo.color
+                    color: '#000000'
                   }}
                 >
                   {textInfo.content}
