@@ -1,95 +1,16 @@
-.App {
-  text-align: center;
-  min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-}
+/* ===========================================
+   MAIN APP CSS - IMPORTS ONLY
+   =========================================== */
 
-.App-header {
-  padding: 2rem;
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-}
+/* Global Styles */
+@import './styles/global.css';
 
-.App-header h1 {
-  margin: 0 0 0.5rem 0;
-  font-size: 2.5rem;
-  font-weight: 300;
-}
+/* Component Styles */
+@import './styles/components/Navigation.css';
+@import './styles/components/Button.css';
+@import './styles/components/Form.css';
+@import './styles/components/PrinterCard.css';
 
-.App-header p {
-  margin: 0;
-  font-size: 1.2rem;
-  opacity: 0.9;
-}
-
-.App-main {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.printers-section h2 {
-  margin-bottom: 2rem;
-  font-size: 2rem;
-  font-weight: 300;
-}
-
-.printers-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-  margin-top: 1rem;
-}
-
-.printer-card {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1.5rem;
-  text-align: left;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.printer-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-}
-
-.printer-card h3 {
-  margin: 0 0 1rem 0;
-  font-size: 1.3rem;
-  font-weight: 500;
-  color: #fff;
-}
-
-.printer-card p {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-  opacity: 0.9;
-}
-
-.printer-card strong {
-  color: #fff;
-  font-weight: 500;
-}
-
-@media (max-width: 768px) {
-  .App-header h1 {
-    font-size: 2rem;
-  }
-  
-  .App-header p {
-    font-size: 1rem;
-  }
-  
-  .printers-grid {
-    grid-template-columns: 1fr;
-  }
-  
-  .App-main {
-    padding: 1rem;
-  }
-}
+/* Page Styles */
+@import './styles/pages/PrinterSettings.css';
+@import './styles/pages/BitmapSettings.css';

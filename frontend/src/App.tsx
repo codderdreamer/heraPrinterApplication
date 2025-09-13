@@ -1,70 +1,69 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
-
-interface Printer {
-  id: number;
-  ip: string;
-  name: string;
-  dots_per_mm: number;
-  width: number;
-  height: number;
-  created_at: string;
-  updated_at: string;
-}
+import Navigation from './components/Navigation';
+import HomePage from './pages/HomePage';
+import PrinterSettings from './pages/PrinterSettings';
+import BitmapSettings from './pages/BitmapSettings';
+import { Printer, apiService } from './services/api';
 
 function App() {
-  const [printers, setPrinters] = useState<Printer[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchPrinters();
-  }, []);
-
-  const fetchPrinters = async () => {
-    try {
-      const response = await fetch('http://localhost:5000/api/printers');
-      const data = await response.json();
-      setPrinters(data);
-    } catch (error) {
-      console.error('Error fetching printers:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Hera Printer Application</h1>
-        <p>Printer Management System</p>
-      </header>
-      
-      <main className="App-main">
-        <div className="printers-section">
-          <h2>Registered Printers</h2>
-          {loading ? (
-            <p>Loading printers...</p>
-          ) : (
-            <div className="printers-grid">
-              {printers.length === 0 ? (
-                <p>No printers found. Add a printer to get started.</p>
-              ) : (
-                printers.map((printer) => (
-                  <div key={printer.id} className="printer-card">
-                    <h3>{printer.name}</h3>
-                    <p><strong>IP:</strong> {printer.ip}</p>
-                    <p><strong>Resolution:</strong> {printer.dots_per_mm} DPI</p>
-                    <p><strong>Size:</strong> {printer.width} x {printer.height} mm</p>
-                    <p><strong>Added:</strong> {new Date(printer.created_at).toLocaleDateString()}</p>
-                  </div>
-                ))
-              )}
-            </div>
-          )}
-        </div>
-      </main>
-    </div>
+    <Router>
+      <div className="App">
+        <Navigation />
+        
+        <main className="App-main">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/printer-settings" element={<PrinterSettings />} />
+            <Route path="/bitmap-settings/:ip" element={<BitmapSettingsWrapper />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
+}
+
+// BitmapSettings wrapper component to handle routing
+function BitmapSettingsWrapper() {
+  const { ip } = useParams<{ ip: string }>();
+  const navigate = useNavigate();
+  
+  const [printer, setPrinter] = useState<Printer | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchPrinter = async () => {
+      try {
+        const data = await apiService.getPrinter(ip!);
+        setPrinter(data);
+      } catch (error) {
+        console.error('Error fetching printer:', error);
+        navigate('/printer-settings');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    if (ip) {
+      fetchPrinter();
+    }
+  }, [ip, navigate]);
+  
+  const handleBack = () => {
+    navigate('/printer-settings');
+  };
+  
+  if (loading) {
+    return <div className="container">Loading...</div>;
+  }
+  
+  if (!printer) {
+    return <div className="container">Printer not found</div>;
+  }
+  
+  return <BitmapSettings printer={printer} onBack={handleBack} />;
 }
 
 export default App;

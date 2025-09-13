@@ -3,9 +3,8 @@ import os
 from typing import List, Dict, Any
 
 class DatabaseModule:
-    def __init__(self, database_path) -> None:
+    def __init__(self, database_path: str) -> None:
         self.database_path = database_path
-        
         self.connection = None
         self._create_database()
         self.connect()
@@ -25,7 +24,11 @@ class DatabaseModule:
         """Connect to SQLite database"""
         try:
             self._create_database()
-            self.connection = sqlite3.connect(self.database_path)
+            # Thread-safe connection
+            self.connection = sqlite3.connect(
+                self.database_path, 
+                check_same_thread=False
+            )
             self.connection.row_factory = sqlite3.Row  # This enables column access by name
             print(f"Connected to database: {self.database_path}")
         except sqlite3.Error as e:
@@ -61,8 +64,7 @@ class DatabaseModule:
         except sqlite3.Error as e:
             print(f"Query execution error: {e}")
             return False
-        
-        
+
     def create_table(self, table_name: str, columns: dict) -> bool:
         """
         Create a table with given columns

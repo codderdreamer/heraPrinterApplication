@@ -1,0 +1,61 @@
+/* ===========================================
+   PRINTER SETTINGS PAGE STYLES
+   =========================================== */
+
+.printer-settings {
+  padding: 2rem;
+}
+
+.printer-settings h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.add-printer-form {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.add-printer-form h2 {
+  margin-bottom: 1.5rem;
+  color: white;
+  font-size: 1.5rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.printer-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .printer-settings {
+    padding: 1rem;
+  }
+  
+  .add-printer-form {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+  
+  .printer-grid {
+    grid-template-columns: 1fr;
+  }
+}

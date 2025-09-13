@@ -1,11 +1,14 @@
 from backend.databaseModule.databaseModule import DatabaseModule
 from typing import List, Dict, Any
+from backend.configModule import DatabaseConfig
 
 class Printers(DatabaseModule):
-    def __init__(self, database_path):
-        super().__init__(database_path)
+    def __init__(self):
+        self.databaseConfig = DatabaseConfig()
+        super().__init__(self.databaseConfig.database_path)
         
         self.create_printers_table()
+        print("test")
         
     
     def create_printers_table(self):
@@ -16,9 +19,7 @@ class Printers(DatabaseModule):
             "name": "TEXT NOT NULL",
             "dpi": "INTEGER NOT NULL",
             "width": "INTEGER NOT NULL",
-            "height": "INTEGER NOT NULL",
-            "created_at": "DATETIME DEFAULT CURRENT_TIMESTAMP",
-            "updated_at": "DATETIME DEFAULT CURRENT_TIMESTAMP"
+            "height": "INTEGER NOT NULL"
         }
         return self.create_table("printers", printers_columns)
 
@@ -29,7 +30,7 @@ class Printers(DatabaseModule):
 
     def get_all_printers(self) -> List[Dict[str, Any]]:
         """Get all printers"""
-        return self.execute_query("SELECT * FROM printers ORDER BY created_at DESC")
+        return self.execute_query("SELECT * FROM printers")
 
     def get_printer_by_id(self, printer_id: int) -> List[Dict[str, Any]]:
         """Get printer by ID"""
@@ -41,7 +42,7 @@ class Printers(DatabaseModule):
 
     def update_printer(self, printer_id: int, ip: str, name: str, dpi: int, width: int, height: int) -> bool:
         """Update printer"""
-        query = "UPDATE printers SET ip = ?, name = ?, dpi = ?, width = ?, height = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?"
+        query = "UPDATE printers SET ip = ?, name = ?, dpi = ?, width = ?, height = ? WHERE id = ?"
         return self.execute_update(query, (ip, name, dpi, width, height, printer_id))
 
     def delete_printer(self, printer_id: int) -> bool:
@@ -51,5 +52,5 @@ class Printers(DatabaseModule):
 
     def search_printers_by_name(self, name_pattern: str) -> List[Dict[str, Any]]:
         """Search printers by name pattern"""
-        query = "SELECT * FROM printers WHERE name LIKE ? ORDER BY created_at DESC"
+        query = "SELECT * FROM printers WHERE name LIKE ?"
         return self.execute_query(query, (f"%{name_pattern}%",))
