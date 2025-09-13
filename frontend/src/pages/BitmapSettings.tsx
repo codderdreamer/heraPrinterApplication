@@ -16,30 +16,38 @@ interface TextItem {
   fontFamily: string;
 }
 
+interface IconItem {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  iconFile: string;
+}
+
+interface BarcodeItem {
+  id: number;
+  sira: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  format: string;
+  data: string;
+  fontSize: number;
+  fontFamily: string;
+  textKonum: string;
+}
+
 const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [textItems, setTextItems] = useState<TextItem[]>([]);
   const [nextTextId, setNextTextId] = useState(1);
 
-  const [iconInfo, setIconInfo] = useState({
-    iconType: 'none',
-    size: 24,
-    color: '#000000'
-  });
+  const [iconItems, setIconItems] = useState<IconItem[]>([]);
+  const [nextIconId, setNextIconId] = useState(1);
 
-  const [barcodeInfo, setBarcodeInfo] = useState({
-    content: '',
-    type: 'code128',
-    height: 50,
-    width: 2
-  });
-
-  const handleIconChange = (field: string, value: string | number) => {
-    setIconInfo(prev => ({ ...prev, [field]: value }));
-  };
-
-  const handleBarcodeChange = (field: string, value: string | number) => {
-    setBarcodeInfo(prev => ({ ...prev, [field]: value }));
-  };
+  const [barcodeItems, setBarcodeItems] = useState<BarcodeItem[]>([]);
+  const [nextBarcodeId, setNextBarcodeId] = useState(1);
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -64,6 +72,73 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const deleteTextItem = (id: number) => {
     setTextItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const addNewIcon = () => {
+    const newIcon: IconItem = {
+      id: nextIconId,
+      x: 0,
+      y: 0,
+      width: 24,
+      height: 24,
+      iconFile: ''
+    };
+    setIconItems(prev => [...prev, newIcon]);
+    setNextIconId(prev => prev + 1);
+  };
+
+  const updateIconItem = (id: number, field: string, value: string | number) => {
+    setIconItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const deleteIconItem = (id: number) => {
+    setIconItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const handleIconFileChange = (id: number, event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const result = e.target?.result as string;
+        updateIconItem(id, 'iconFile', result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const addNewBarcode = () => {
+    const newBarcode: BarcodeItem = {
+      id: nextBarcodeId,
+      sira: nextBarcodeId,
+      x: 0,
+      y: 0,
+      width: 100,
+      height: 50,
+      format: 'code128',
+      data: '',
+      fontSize: 12,
+      fontFamily: 'Arial',
+      textKonum: 'alt'
+    };
+    setBarcodeItems(prev => [...prev, newBarcode]);
+    setNextBarcodeId(prev => prev + 1);
+  };
+
+  const updateBarcodeItem = (id: number, field: string, value: string | number) => {
+    setBarcodeItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const deleteBarcodeItem = (id: number) => {
+    setBarcodeItems(prev => prev.filter(item => item.id !== id));
   };
 
   // Bitmap boyutlarını hesapla (mm'den pixel'e)
@@ -159,81 +234,214 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
           <div className="settings-section">
             <h3>İkon Bilgileri</h3>
-            <div className="form-group">
-              <label>İkon Tipi:</label>
-              <select
-                value={iconInfo.iconType}
-                onChange={(e) => handleIconChange('iconType', e.target.value)}
-              >
-                <option value="none">İkon Yok</option>
-                <option value="logo">Logo</option>
-                <option value="warning">Uyarı</option>
-                <option value="info">Bilgi</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Boyut:</label>
-              <input
-                type="number"
-                value={iconInfo.size}
-                onChange={(e) => handleIconChange('size', parseInt(e.target.value))}
-                min="16"
-                max="64"
-              />
-            </div>
-            <div className="form-group">
-              <label>Renk:</label>
-              <input
-                type="color"
-                value={iconInfo.color}
-                onChange={(e) => handleIconChange('color', e.target.value)}
-              />
-            </div>
+            
+            <button 
+              className="btn btn-secondary add-text-btn"
+              onClick={addNewIcon}
+            >
+              + İkon Ekle
+            </button>
+
+            {iconItems.map((iconItem) => (
+              <div key={iconItem.id} className="text-item">
+                <div className="text-item-header">
+                  <span>İkon #{iconItem.id}</span>
+                  <button 
+                    className="btn btn-danger delete-text-btn"
+                    onClick={() => deleteIconItem(iconItem.id)}
+                  >
+                    Sil
+                  </button>
+                </div>
+                
+                <div className="form-group">
+                  <label>İkon Dosyası:</label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleIconFileChange(iconItem.id, e)}
+                  />
+                  {iconItem.iconFile && (
+                    <div className="icon-preview">
+                      <img src={iconItem.iconFile} alt="Icon preview" style={{ maxWidth: '50px', maxHeight: '50px' }} />
+                    </div>
+                  )}
+                </div>
+                <div className="form-group">
+                  <label>X Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={iconItem.x}
+                    onChange={(e) => updateIconItem(iconItem.id, 'x', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Y Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={iconItem.y}
+                    onChange={(e) => updateIconItem(iconItem.id, 'y', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Genişlik:</label>
+                  <input
+                    type="number"
+                    value={iconItem.width}
+                    onChange={(e) => updateIconItem(iconItem.id, 'width', parseInt(e.target.value))}
+                    min="1"
+                    max="200"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Yükseklik:</label>
+                  <input
+                    type="number"
+                    value={iconItem.height}
+                    onChange={(e) => updateIconItem(iconItem.id, 'height', parseInt(e.target.value))}
+                    min="1"
+                    max="200"
+                  />
+                </div>
+              </div>
+            ))}
           </div>
 
           <div className="settings-section">
             <h3>Barkod Bilgileri</h3>
-            <div className="form-group">
-              <label>İçerik:</label>
-              <input
-                type="text"
-                value={barcodeInfo.content}
-                onChange={(e) => handleBarcodeChange('content', e.target.value)}
-                placeholder="Barkod içeriği..."
-              />
-            </div>
-            <div className="form-group">
-              <label>Tip:</label>
-              <select
-                value={barcodeInfo.type}
-                onChange={(e) => handleBarcodeChange('type', e.target.value)}
-              >
-                <option value="code128">Code 128</option>
-                <option value="code39">Code 39</option>
-                <option value="ean13">EAN-13</option>
-                <option value="qr">QR Code</option>
-              </select>
-            </div>
-            <div className="form-group">
-              <label>Yükseklik:</label>
-              <input
-                type="number"
-                value={barcodeInfo.height}
-                onChange={(e) => handleBarcodeChange('height', parseInt(e.target.value))}
-                min="20"
-                max="100"
-              />
-            </div>
-            <div className="form-group">
-              <label>Genişlik:</label>
-              <input
-                type="number"
-                value={barcodeInfo.width}
-                onChange={(e) => handleBarcodeChange('width', parseInt(e.target.value))}
-                min="1"
-                max="10"
-              />
-            </div>
+            
+            <button 
+              className="btn btn-secondary add-text-btn"
+              onClick={addNewBarcode}
+            >
+              + Barkod Ekle
+            </button>
+
+            {barcodeItems.map((barcodeItem) => (
+              <div key={barcodeItem.id} className="text-item">
+                <div className="text-item-header">
+                  <span>Barkod #{barcodeItem.id}</span>
+                  <button 
+                    className="btn btn-danger delete-text-btn"
+                    onClick={() => deleteBarcodeItem(barcodeItem.id)}
+                  >
+                    Sil
+                  </button>
+                </div>
+                
+                <div className="form-group">
+                  <label>Sıra:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.sira}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'sira', parseInt(e.target.value))}
+                    min="1"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>X Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.x}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'x', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Y Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.y}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'y', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Genişlik:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.width}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'width', parseInt(e.target.value))}
+                    min="1"
+                    max="500"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Yükseklik:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.height}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'height', parseInt(e.target.value))}
+                    min="1"
+                    max="200"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Format:</label>
+                  <select
+                    value={barcodeItem.format}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'format', e.target.value)}
+                  >
+                    <option value="code128">Code 128</option>
+                    <option value="code39">Code 39</option>
+                    
+                    <option value="qr">QR Code</option>
+                    
+                    
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Data:</label>
+                  <input
+                    type="text"
+                    value={barcodeItem.data}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'data', e.target.value)}
+                    placeholder="Barkod verisi..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Boyutu:</label>
+                  <input
+                    type="number"
+                    value={barcodeItem.fontSize}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'fontSize', parseInt(e.target.value))}
+                    min="8"
+                    max="72"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Ailesi:</label>
+                  <select
+                    value={barcodeItem.fontFamily}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'fontFamily', e.target.value)}
+                  >
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Helvetica">Helvetica</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label>Text Konum:</label>
+                  <select
+                    value={barcodeItem.textKonum}
+                    onChange={(e) => updateBarcodeItem(barcodeItem.id, 'textKonum', e.target.value)}
+                  >
+                    <option value="alt">Alt</option>
+                    <option value="ust">Üst</option>
+                    <option value="sol">Sol</option>
+                    <option value="sag">Sağ</option>
+                    <option value="yok">Yok</option>
+                  </select>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -266,45 +474,60 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 )
               ))}
 
-              {/* Icon Preview */}
-              {iconInfo.iconType !== 'none' && (
-                <div 
-                  className="preview-icon"
-                  style={{
-                    width: `${iconInfo.size}px`,
-                    height: `${iconInfo.size}px`,
-                    backgroundColor: iconInfo.color,
-                    borderRadius: '4px'
-                  }}
-                >
-                  {iconInfo.iconType}
-                </div>
-              )}
+              {/* Icon Preview - Multiple icons */}
+              {iconItems.map((iconItem) => (
+                iconItem.iconFile && (
+                  <img
+                    key={iconItem.id}
+                    src={iconItem.iconFile}
+                    alt="Icon"
+                    className="preview-icon"
+                    style={{
+                      position: 'absolute',
+                      left: `${iconItem.x || 0}px`,
+                      top: `${iconItem.y || 0}px`,
+                      width: `${iconItem.width}px`,
+                      height: `${iconItem.height}px`,
+                      objectFit: 'contain'
+                    }}
+                  />
+                )
+              ))}
 
-              {/* Barcode Preview */}
-              {barcodeInfo.content && (
-                <div 
-                  className="preview-barcode"
-                  style={{
-                    height: `${barcodeInfo.height}px`,
-                    width: `${barcodeInfo.content.length * 8}px`,
-                    backgroundColor: '#000000',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    color: '#ffffff',
-                    fontSize: '10px'
-                  }}
-                >
-                  {barcodeInfo.content}
-                </div>
-              )}
+              {/* Barcode Preview - Multiple barcodes */}
+              {barcodeItems.map((barcodeItem) => (
+                barcodeItem.data && (
+                  <div
+                    key={barcodeItem.id}
+                    className="preview-barcode"
+                    style={{
+                      position: 'absolute',
+                      left: `${barcodeItem.x || 0}px`,
+                      top: `${barcodeItem.y || 0}px`,
+                      width: `${barcodeItem.width}px`,
+                      height: `${barcodeItem.height}px`,
+                      backgroundColor: '#000000',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      fontSize: `${barcodeItem.fontSize}px`,
+                      fontFamily: barcodeItem.fontFamily,
+                      border: '1px solid #333'
+                    }}
+                  >
+                    {barcodeItem.data}
+                  </div>
+                )
+              ))}
             </div>
             <div className="preview-info">
               <p>Boyut: {widthPx} x {heightPx} px</p>
               <p>Çözünürlük: {printer.dpi} DPI</p>
               <p>Oran: {printer.width}:{printer.height}</p>
               <p>Text Sayısı: {textItems.length}</p>
+              <p>İkon Sayısı: {iconItems.length}</p>
+              <p>Barkod Sayısı: {barcodeItems.length}</p>
             </div>
           </div>
         </div>
