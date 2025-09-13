@@ -7,14 +7,18 @@ interface BitmapSettingsProps {
   onBack: () => void;
 }
 
+interface TextItem {
+  id: number;
+  content: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  fontFamily: string;
+}
+
 const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
-  const [textInfo, setTextInfo] = useState({
-    content: '',
-    x: 0,
-    y: 0,
-    fontSize: 12,
-    fontFamily: 'Arial'
-  });
+  const [textItems, setTextItems] = useState<TextItem[]>([]);
+  const [nextTextId, setNextTextId] = useState(1);
 
   const [iconInfo, setIconInfo] = useState({
     iconType: 'none',
@@ -29,12 +33,6 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     width: 2
   });
 
-  const [showTextFields, setShowTextFields] = useState(false);
-
-  const handleTextChange = (field: string, value: string | number) => {
-    setTextInfo(prev => ({ ...prev, [field]: value }));
-  };
-
   const handleIconChange = (field: string, value: string | number) => {
     setIconInfo(prev => ({ ...prev, [field]: value }));
   };
@@ -43,8 +41,29 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     setBarcodeInfo(prev => ({ ...prev, [field]: value }));
   };
 
-  const toggleTextFields = () => {
-    setShowTextFields(!showTextFields);
+  const addNewText = () => {
+    const newText: TextItem = {
+      id: nextTextId,
+      content: '',
+      x: 0,
+      y: 0,
+      fontSize: 12,
+      fontFamily: 'Arial'
+    };
+    setTextItems(prev => [...prev, newText]);
+    setNextTextId(prev => prev + 1);
+  };
+
+  const updateTextItem = (id: number, field: string, value: string | number) => {
+    setTextItems(prev => 
+      prev.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      )
+    );
+  };
+
+  const deleteTextItem = (id: number) => {
+    setTextItems(prev => prev.filter(item => item.id !== id));
   };
 
   // Bitmap boyutlarını hesapla (mm'den pixel'e)
@@ -62,24 +81,33 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       <div className="settings-content">
         <div className="settings-panel">
           <div className="settings-section">
-            <div className="section-header">
-              <h3>Text Bilgileri</h3>
-              <button 
-                className="toggle-btn"
-                onClick={toggleTextFields}
-              >
-                {showTextFields ? '−' : '+'}
-              </button>
-            </div>
+            <h3>Text Bilgileri</h3>
             
-            {showTextFields && (
-              <div className="form-fields">
+            <button 
+              className="btn btn-secondary add-text-btn"
+              onClick={addNewText}
+            >
+              + Text Ekle
+            </button>
+
+            {textItems.map((textItem) => (
+              <div key={textItem.id} className="text-item">
+                <div className="text-item-header">
+                  <span>Text #{textItem.id}</span>
+                  <button 
+                    className="btn btn-danger delete-text-btn"
+                    onClick={() => deleteTextItem(textItem.id)}
+                  >
+                    Sil
+                  </button>
+                </div>
+                
                 <div className="form-group">
                   <label>Text:</label>
                   <input
                     type="text"
-                    value={textInfo.content}
-                    onChange={(e) => handleTextChange('content', e.target.value)}
+                    value={textItem.content}
+                    onChange={(e) => updateTextItem(textItem.id, 'content', e.target.value)}
                     placeholder="Yazılacak metin..."
                   />
                 </div>
@@ -87,26 +115,28 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   <label>X Koordinatı:</label>
                   <input
                     type="number"
-                    value={textInfo.x}
-                    onChange={(e) => handleTextChange('x', parseInt(e.target.value) || 0)}
+                    value={textItem.x}
+                    onChange={(e) => updateTextItem(textItem.id, 'x', e.target.value === '' ? '' : parseInt(e.target.value))}
                     min="0"
+                    placeholder="0"
                   />
                 </div>
                 <div className="form-group">
                   <label>Y Koordinatı:</label>
                   <input
                     type="number"
-                    value={textInfo.y}
-                    onChange={(e) => handleTextChange('y', parseInt(e.target.value) || 0)}
+                    value={textItem.y}
+                    onChange={(e) => updateTextItem(textItem.id, 'y', e.target.value === '' ? '' : parseInt(e.target.value))}
                     min="0"
+                    placeholder="0"
                   />
                 </div>
                 <div className="form-group">
                   <label>Font Boyutu:</label>
                   <input
                     type="number"
-                    value={textInfo.fontSize}
-                    onChange={(e) => handleTextChange('fontSize', parseInt(e.target.value))}
+                    value={textItem.fontSize}
+                    onChange={(e) => updateTextItem(textItem.id, 'fontSize', parseInt(e.target.value))}
                     min="8"
                     max="72"
                   />
@@ -114,8 +144,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 <div className="form-group">
                   <label>Font Ailesi:</label>
                   <select
-                    value={textInfo.fontFamily}
-                    onChange={(e) => handleTextChange('fontFamily', e.target.value)}
+                    value={textItem.fontFamily}
+                    onChange={(e) => updateTextItem(textItem.id, 'fontFamily', e.target.value)}
                   >
                     <option value="Arial">Arial</option>
                     <option value="Times New Roman">Times New Roman</option>
@@ -124,7 +154,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   </select>
                 </div>
               </div>
-            )}
+            ))}
           </div>
 
           <div className="settings-section">
@@ -216,22 +246,25 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 aspectRatio: `${widthPx} / ${heightPx}`
               }}
             >
-              {/* Text Preview */}
-              {textInfo.content && (
-                <div 
-                  className="preview-text"
-                  style={{
-                    position: 'absolute',
-                    left: `${textInfo.x}px`,
-                    top: `${textInfo.y}px`,
-                    fontSize: `${textInfo.fontSize}px`,
-                    fontFamily: textInfo.fontFamily,
-                    color: '#000000'
-                  }}
-                >
-                  {textInfo.content}
-                </div>
-              )}
+              {/* Text Preview - Multiple texts */}
+              {textItems.map((textItem) => (
+                textItem.content && (
+                  <div 
+                    key={textItem.id}
+                    className="preview-text"
+                    style={{
+                      position: 'absolute',
+                      left: `${textItem.x || 0}px`,
+                      top: `${textItem.y || 0}px`,
+                      fontSize: `${textItem.fontSize}px`,
+                      fontFamily: textItem.fontFamily,
+                      color: '#000000'
+                    }}
+                  >
+                    {textItem.content}
+                  </div>
+                )
+              ))}
 
               {/* Icon Preview */}
               {iconInfo.iconType !== 'none' && (
@@ -271,6 +304,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
               <p>Boyut: {widthPx} x {heightPx} px</p>
               <p>Çözünürlük: {printer.dpi} DPI</p>
               <p>Oran: {printer.width}:{printer.height}</p>
+              <p>Text Sayısı: {textItems.length}</p>
             </div>
           </div>
         </div>
