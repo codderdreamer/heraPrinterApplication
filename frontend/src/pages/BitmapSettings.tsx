@@ -51,6 +51,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const [saveStatus, setSaveStatus] = useState<string>('');
   const [logoUrl, setLogoUrl] = useState<string>('');
+  const [printStatus, setPrintStatus] = useState<string>('');
 
   // Logo'yu almak için fonksiyon
   const fetchLogo = useCallback(async () => {
@@ -100,6 +101,23 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
     return () => clearTimeout(timeoutId);
   }, [textItems, iconItems, barcodeItems, saveSettings]);
+
+  // Print fonksiyonu
+  const handlePrint = async () => {
+    try {
+      setPrintStatus('Yazdırılıyor...');
+      
+      // Şimdilik sadece simülasyon - gerçek print işlemi backend'e eklenecek
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      setPrintStatus('Yazdırıldı!');
+      setTimeout(() => setPrintStatus(''), 3000);
+    } catch (error) {
+      console.error('Print error:', error);
+      setPrintStatus('Hata!');
+      setTimeout(() => setPrintStatus(''), 3000);
+    }
+  };
 
   // Component mount olduğunda logo'yu al
   useEffect(() => {
@@ -208,15 +226,33 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       <div className="settings-header">
         <button onClick={onBack} className="btn-back">← Geri</button>
         <h2>Bitmap Ayarları - {printer.name}</h2>
-        {saveStatus && (
-          <span className="save-status" style={{ 
-            color: saveStatus === 'Kaydedildi' ? '#4CAF50' : '#f44336',
-            marginLeft: '1rem',
-            fontSize: '0.9rem'
-          }}>
-            {saveStatus}
-          </span>
-        )}
+        <div className="header-status">
+          {saveStatus && (
+            <span className="save-status" style={{ 
+              color: saveStatus === 'Kaydedildi' ? '#4CAF50' : '#f44336',
+              marginRight: '1rem',
+              fontSize: '0.9rem'
+            }}>
+              {saveStatus}
+            </span>
+          )}
+          {printStatus && (
+            <span className="print-status" style={{ 
+              color: printStatus === 'Yazdırıldı!' ? '#4CAF50' : printStatus === 'Hata!' ? '#f44336' : '#2196F3',
+              marginRight: '1rem',
+              fontSize: '0.9rem'
+            }}>
+              {printStatus}
+            </span>
+          )}
+          <button 
+            onClick={handlePrint} 
+            className="btn btn-primary print-btn"
+            disabled={printStatus === 'Yazdırılıyor...'}
+          >
+            {printStatus === 'Yazdırılıyor...' ? '⏳ Yazdırılıyor...' : '🖨️ Yazdır'}
+          </button>
+        </div>
       </div>
 
       <div className="settings-content">

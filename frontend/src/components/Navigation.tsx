@@ -15,12 +15,6 @@ const Navigation: React.FC = () => {
           to="/" 
           className={`nav-link ${location.pathname === '/' ? 'active' : ''}`}
         >
-          Ana Sayfa
-        </Link>
-        <Link 
-          to="/printer-settings" 
-          className={`nav-link ${location.pathname === '/printer-settings' ? 'active' : ''}`}
-        >
           Printer Ayarları
         </Link>
       </div>

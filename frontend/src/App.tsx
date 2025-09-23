@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useParams, useNavigate } from 'react-router-dom';
 import './App.css';
 import Navigation from './components/Navigation';
-import HomePage from './pages/HomePage';
 import PrinterSettings from './pages/PrinterSettings';
 import BitmapSettings from './pages/BitmapSettings';
 import { Printer, apiService } from './services/api';
@@ -15,7 +14,7 @@ function App() {
         
         <main className="App-main">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<PrinterSettings />} />
             <Route path="/printer-settings" element={<PrinterSettings />} />
             <Route path="/bitmap-settings/:ip" element={<BitmapSettingsWrapper />} />
           </Routes>
