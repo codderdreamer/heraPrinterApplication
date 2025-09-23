@@ -86,6 +86,19 @@ class ApiService {
   async getPrinterCount(): Promise<{ count: number }> {
     return this.request<{ count: number }>('/printers/count');
   }
+
+  async printToPrinter(ip: string, printData: {
+    type: 'bmp' | 'text';
+    bmp_path?: string;
+    text?: string;
+    x?: number;
+    y?: number;
+  }): Promise<void> {
+    return this.request<void>(`/printers/${ip}/print`, {
+      method: 'POST',
+      body: JSON.stringify(printData),
+    });
+  }
 }
 
 export const apiService = new ApiService();

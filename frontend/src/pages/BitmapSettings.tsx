@@ -107,8 +107,11 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     try {
       setPrintStatus('Yazdırılıyor...');
       
-      // Şimdilik sadece simülasyon - gerçek print işlemi backend'e eklenecek
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Gerçek print işlemi - BMP dosyasını yazdır
+      await apiService.printToPrinter(printer.ip, {
+        type: 'bmp',
+        bmp_path: 'logo.bmp'
+      });
       
       setPrintStatus('Yazdırıldı!');
       setTimeout(() => setPrintStatus(''), 3000);

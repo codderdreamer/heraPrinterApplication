@@ -2,6 +2,7 @@ from flask import Flask, Response, render_template, request, jsonify, session, s
 from flask_cors import CORS
 from threading import Thread
 import os
+from backend.tscPrinterModule import printer_manager
 
 class FlaskModule:
     def __init__(self, application) -> None:
@@ -37,8 +38,20 @@ class FlaskModule:
         @self.app.route("/api/printers", methods=['GET'])
         def get_printers():
             try:
-                printers = self.application.printers.get_all_printers_with_status()
-                return jsonify(printers)
+                printers = self.application.printers.get_all_printers()
+                result = []
+                
+                for printer in printers:
+                    # Check printer connection status using printer_manager
+                    status_info = printer_manager.get_printer_status(printer["ip"])
+                    printer_with_status = {
+                        **printer,
+                        "is_online": status_info["is_online"],
+                        "status": status_info["status"]
+                    }
+                    result.append(printer_with_status)
+                
+                return jsonify(result)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
@@ -70,11 +83,21 @@ class FlaskModule:
         @self.app.route("/api/printers/<string:ip>", methods=['GET'])
         def get_printer(ip):
             try:
-                printer = self.application.printers.get_printer_status(ip)
-                if "error" in printer:
-                    return jsonify(printer), 404
-                else:
-                    return jsonify(printer)
+                printer_data = self.application.printers.get_printer_by_ip(ip)
+                if not printer_data:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                printer = printer_data[0]
+                # Check printer connection status using printer_manager
+                status_info = printer_manager.get_printer_status(ip)
+                
+                result = {
+                    **printer,
+                    "is_online": status_info["is_online"],
+                    "status": status_info["status"]
+                }
+                
+                return jsonify(result)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
@@ -131,6 +154,40 @@ class FlaskModule:
             try:
                 count = self.application.printers.get_printer_count()
                 return jsonify({"count": count})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/printers/<string:ip>/print", methods=['POST'])
+        def print_to_printer(ip):
+            try:
+                data = request.get_json()
+                print_type = data.get('type', 'bmp')  # 'bmp' or 'text'
+                
+                # Get printer info from database
+                printer_data = self.application.printers.get_printer_by_ip(ip)
+                if not printer_data:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                printer_info = printer_data[0]
+                width_mm = printer_info["width"]
+                height_mm = printer_info["height"]
+                
+                if print_type == 'bmp':
+                    bmp_path = data.get('bmp_path', 'logo.bmp')
+                    success = printer_manager.print_bmp(ip, bmp_path, width_mm, height_mm)
+                elif print_type == 'text':
+                    text = data.get('text', 'Test Print')
+                    x = data.get('x', 10)
+                    y = data.get('y', 10)
+                    success = printer_manager.print_text(ip, text, x, y, width_mm, height_mm)
+                else:
+                    return jsonify({"error": "Invalid print type. Use 'bmp' or 'text'"}), 400
+                
+                if success:
+                    return jsonify({"message": f"Successfully printed to {ip}"})
+                else:
+                    return jsonify({"error": f"Failed to print to {ip}"}), 500
+                    
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         

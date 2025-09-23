@@ -1,8 +1,6 @@
 from backend.databaseModule.databaseModule import DatabaseModule
 from typing import List, Dict, Any
 from backend.configModule import DatabaseConfig
-import socket
-import time
 
 class Printers(DatabaseModule):
     def __init__(self):
@@ -55,54 +53,6 @@ class Printers(DatabaseModule):
         """Search printers by name pattern"""
         query = "SELECT * FROM printers WHERE name LIKE ?"
         return self.execute_query(query, (f"%{name_pattern}%",))
-
-    def check_printer_connection(self, ip: str, port: int = 9100, timeout: int = 3) -> bool:
-        """Check if printer is online and reachable"""
-        try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(timeout)
-            result = sock.connect_ex((ip, port))
-            sock.close()
-            return result == 0
-        except Exception as e:
-            print(f"Connection check error for {ip}: {e}")
-            return False
-
-    def get_printer_status(self, ip: str) -> Dict[str, Any]:
-        """Get printer status including connection info"""
-        printer_data = self.get_printer_by_ip(ip)
-        if not printer_data:
-            return {"error": "Printer not found"}
-        
-        printer = printer_data[0]
-        is_online = self.check_printer_connection(ip)
-        
-        return {
-            "id": printer["id"],
-            "ip": printer["ip"],
-            "name": printer["name"],
-            "dpi": printer["dpi"],
-            "width": printer["width"],
-            "height": printer["height"],
-            "is_online": is_online,
-            "status": "Online" if is_online else "Offline"
-        }
-
-    def get_all_printers_with_status(self) -> List[Dict[str, Any]]:
-        """Get all printers with their connection status"""
-        printers = self.get_all_printers()
-        result = []
-        
-        for printer in printers:
-            is_online = self.check_printer_connection(printer["ip"])
-            printer_with_status = {
-                **printer,
-                "is_online": is_online,
-                "status": "Online" if is_online else "Offline"
-            }
-            result.append(printer_with_status)
-        
-        return result
 
     def get_printer_count(self) -> int:
         """Get total number of printers"""
