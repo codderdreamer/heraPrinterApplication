@@ -99,7 +99,8 @@ class TSCPrinter:
             if not bmp_file.exists():
                 raise Exception(f"BMP file not found: {bmp_path}")
             
-            fname = bmp_file.name.upper()
+            #fname = bmp_file.name.upper()
+            fname = "LOGO.BMP"
             bmp_bytes = bmp_file.read_bytes()
             
             # TSPL command to download and print the BMP

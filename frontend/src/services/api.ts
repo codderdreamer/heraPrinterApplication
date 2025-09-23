@@ -60,20 +60,9 @@ class ApiService {
     return this.request<{ status: string; message: string }>('/health');
   }
 
-  async saveBitmapSettings(settings: any): Promise<void> {
-    return this.request<void>('/bitmap-settings', {
-      method: 'POST',
-      body: JSON.stringify(settings),
-    });
-  }
-
-  async getLogo(settings: any): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/bitmap-settings`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(settings),
+  async getLogo(): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/logo`, {
+      method: 'GET',
     });
 
     if (!response.ok) {
@@ -97,6 +86,47 @@ class ApiService {
     return this.request<void>(`/printers/${ip}/print`, {
       method: 'POST',
       body: JSON.stringify(printData),
+    });
+  }
+
+  async saveBitmapSettings(ip: string, name: string, settings: {
+    textItems: any[];
+    iconItems: any[];
+    barcodeItems: any[];
+  }): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/bitmap-settings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ip,
+        name,
+        ...settings
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  async getBitmapSettings(ip: string, name?: string): Promise<{
+    found: boolean;
+    settings?: any;
+    settings_list?: any[];
+    name?: string;
+    message?: string;
+  }> {
+    const url = name ? `/bitmap-settings/${ip}?name=${encodeURIComponent(name)}` : `/bitmap-settings/${ip}`;
+    return this.request(url);
+  }
+
+  async deleteBitmapSettings(ip: string, name: string): Promise<void> {
+    return this.request<void>(`/bitmap-settings/${ip}/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
     });
   }
 }

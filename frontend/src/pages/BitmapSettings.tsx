@@ -52,68 +52,48 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [saveStatus, setSaveStatus] = useState<string>('');
   const [logoUrl, setLogoUrl] = useState<string>('');
   const [printStatus, setPrintStatus] = useState<string>('');
+  const [settingsName, setSettingsName] = useState<string>('default');
+  const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // Logo'yu almak için fonksiyon
+  // Logo'yu almak için fonksiyon (sadece component mount olduğunda)
   const fetchLogo = useCallback(async () => {
     try {
-      const settings = {
-        textItems,
-        iconItems,
-        barcodeItems
-      };
-      
-      const blob = await apiService.getLogo({ ...settings, ip: printer.ip });
+      // Sadece mevcut logo.bmp dosyasını al
+      const blob = await apiService.getLogo();
       const url = URL.createObjectURL(blob);
       setLogoUrl(url);
     } catch (error) {
       console.error('Error fetching logo:', error);
     }
-  }, [textItems, iconItems, barcodeItems, printer.ip]);
+  }, []);
 
-  // Otomatik kaydetme fonksiyonu
-  const saveSettings = useCallback(async () => {
-    try {
-      const settings = {
-        textItems,
-        iconItems,
-        barcodeItems
-      };
-      
-      await apiService.saveBitmapSettings({ ...settings, ip: printer.ip });
-      setSaveStatus('Kaydedildi');
-      
-      // 2 saniye sonra status'u temizle
-      setTimeout(() => setSaveStatus(''), 2000);
-    } catch (error) {
-      console.error('Error saving bitmap settings:', error);
-      setSaveStatus('Hata!');
-      setTimeout(() => setSaveStatus(''), 2000);
-    }
-  }, [textItems, iconItems, barcodeItems, printer.ip]);
-
-  // Form değişikliklerini otomatik kaydet
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      if (textItems.length > 0 || iconItems.length > 0 || barcodeItems.length > 0) {
-        saveSettings();
-      }
-    }, 1000); // 1 saniye bekle
-
-    return () => clearTimeout(timeoutId);
-  }, [textItems, iconItems, barcodeItems, saveSettings]);
+  // Otomatik kaydetme kaldırıldı - sadece manuel kaydetme kullanılacak
 
   // Print fonksiyonu
   const handlePrint = async () => {
     try {
       setPrintStatus('Yazdırılıyor...');
       
-      // Gerçek print işlemi - BMP dosyasını yazdır
+      // Mevcut ayarları kaydet ve bitmap oluştur
+      const settings = {
+        textItems,
+        iconItems,
+        barcodeItems
+      };
+      
+      // Ayarları kaydet ve bitmap dosyasını oluştur
+      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      
+      // Oluşturulan bitmap dosyasını yazdır
+      const bmp_filename = `bitmap_${printer.ip}_${settingsName}.bmp`;
       await apiService.printToPrinter(printer.ip, {
         type: 'bmp',
-        bmp_path: 'logo.bmp'
+        bmp_path: bmp_filename
       });
       
       setPrintStatus('Yazdırıldı!');
+      setHasUnsavedChanges(false); // Artık kaydedildi
       setTimeout(() => setPrintStatus(''), 3000);
     } catch (error) {
       console.error('Print error:', error);
@@ -122,10 +102,99 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     }
   };
 
-  // Component mount olduğunda logo'yu al
+  // Save settings fonksiyonu
+  const handleSaveSettings = async () => {
+    try {
+      setSaveStatus('Kaydediliyor...');
+      
+      const settings = {
+        textItems,
+        iconItems,
+        barcodeItems
+      };
+      
+      console.log(`Saving settings for printer ${printer.ip} with name: ${settingsName}`);
+      console.log('Settings to save:', settings);
+      
+      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      
+      console.log('Settings saved successfully');
+      setSaveStatus('Kaydedildi!');
+      setShowSaveDialog(false);
+      setHasUnsavedChanges(false); // Artık kaydedildi
+      setTimeout(() => setSaveStatus(''), 3000);
+    } catch (error) {
+      console.error('Save error:', error);
+      setSaveStatus('Hata!');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
+  // Load settings fonksiyonu
+  const handleLoadSettings = async (name: string = 'default') => {
+    try {
+      console.log(`Loading settings for printer ${printer.ip} with name: ${name}`);
+      const response = await apiService.getBitmapSettings(printer.ip, name);
+      console.log('Load settings response:', response);
+      
+      if (response.found && response.settings) {
+        const settings = response.settings;
+        console.log('Loaded settings:', settings);
+        
+        // Load text items
+        if (settings.textItems && Array.isArray(settings.textItems)) {
+          console.log('Loading text items:', settings.textItems);
+          setTextItems(settings.textItems);
+          setNextTextId(settings.textItems.length > 0 ? Math.max(...settings.textItems.map((item: any) => item.id)) + 1 : 1);
+        } else {
+          console.log('No text items found or not array');
+          setTextItems([]);
+          setNextTextId(1);
+        }
+        
+        // Load icon items
+        if (settings.iconItems && Array.isArray(settings.iconItems)) {
+          console.log('Loading icon items:', settings.iconItems);
+          setIconItems(settings.iconItems);
+          setNextIconId(settings.iconItems.length > 0 ? Math.max(...settings.iconItems.map((item: any) => item.id)) + 1 : 1);
+        } else {
+          console.log('No icon items found or not array');
+          setIconItems([]);
+          setNextIconId(1);
+        }
+        
+        // Load barcode items
+        if (settings.barcodeItems && Array.isArray(settings.barcodeItems)) {
+          console.log('Loading barcode items:', settings.barcodeItems);
+          setBarcodeItems(settings.barcodeItems);
+          setNextBarcodeId(settings.barcodeItems.length > 0 ? Math.max(...settings.barcodeItems.map((item: any) => item.id)) + 1 : 1);
+        } else {
+          console.log('No barcode items found or not array');
+          setBarcodeItems([]);
+          setNextBarcodeId(1);
+        }
+        
+        setSaveStatus('Ayarlar yüklendi!');
+        setHasUnsavedChanges(false); // Yeni ayarlar yüklendi
+        setTimeout(() => setSaveStatus(''), 3000);
+      } else {
+        console.log('No settings found');
+        setSaveStatus('Kayıtlı ayar bulunamadı');
+        setTimeout(() => setSaveStatus(''), 3000);
+      }
+    } catch (error) {
+      console.error('Load error:', error);
+      setSaveStatus('Yükleme hatası!');
+      setTimeout(() => setSaveStatus(''), 3000);
+    }
+  };
+
+  // Component mount olduğunda logo'yu al ve ayarları yükle
   useEffect(() => {
     fetchLogo();
-  }, [fetchLogo]);
+    // Sayfa açıldığında default ayarları yükle
+    handleLoadSettings('default');
+  }, []); // Sadece component mount olduğunda çalışsın
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -136,16 +205,24 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       fontSize: 12,
       fontFamily: 'Arial'
     };
-    setTextItems(prev => [...prev, newText]);
+    console.log('Adding new text:', newText);
+    setTextItems(prev => {
+      const newItems = [...prev, newText];
+      console.log('Updated textItems:', newItems);
+      return newItems;
+    });
     setNextTextId(prev => prev + 1);
   };
 
   const updateTextItem = (id: number, field: string, value: string | number) => {
-    setTextItems(prev => 
-      prev.map(item => 
+    console.log(`Updating text item ${id}, field: ${field}, value: ${value}`);
+    setTextItems(prev => {
+      const updated = prev.map(item => 
         item.id === id ? { ...item, [field]: value } : item
-      )
-    );
+      );
+      console.log('Updated textItems after update:', updated);
+      return updated;
+    });
   };
 
   const deleteTextItem = (id: number) => {
@@ -254,6 +331,13 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
             disabled={printStatus === 'Yazdırılıyor...'}
           >
             {printStatus === 'Yazdırılıyor...' ? '⏳ Yazdırılıyor...' : '🖨️ Yazdır'}
+          </button>
+          <button 
+            onClick={() => setShowSaveDialog(true)} 
+            className="btn btn-secondary save-btn"
+            disabled={saveStatus === 'Kaydediliyor...'}
+          >
+            {saveStatus === 'Kaydediliyor...' ? '⏳ Kaydediliyor...' : '💾 Kaydet'}
           </button>
         </div>
       </div>
@@ -638,6 +722,39 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
           </div>
         </div>
       </div>
+
+      {/* Save Dialog */}
+      {showSaveDialog && (
+        <div className="save-dialog-overlay">
+          <div className="save-dialog">
+            <h3>Bitmap Ayarlarını Kaydet</h3>
+            <div className="form-group">
+              <label>Ayar Adı:</label>
+              <input
+                type="text"
+                value={settingsName}
+                onChange={(e) => setSettingsName(e.target.value)}
+                placeholder="Örn: varsayılan, ürün etiketi"
+              />
+            </div>
+            <div className="dialog-buttons">
+              <button 
+                onClick={handleSaveSettings}
+                className="btn btn-primary"
+                disabled={saveStatus === 'Kaydediliyor...' || !settingsName.trim()}
+              >
+                {saveStatus === 'Kaydediliyor...' ? 'Kaydediliyor...' : 'Kaydet'}
+              </button>
+              <button 
+                onClick={() => setShowSaveDialog(false)}
+                className="btn btn-secondary"
+              >
+                İptal
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
