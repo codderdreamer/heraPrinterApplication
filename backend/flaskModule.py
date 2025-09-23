@@ -1,4 +1,4 @@
-from flask import Flask, Response, render_template, request, jsonify, session
+from flask import Flask, Response, render_template, request, jsonify, session, send_file
 from flask_cors import CORS
 from threading import Thread
 import os
@@ -37,7 +37,7 @@ class FlaskModule:
         @self.app.route("/api/printers", methods=['GET'])
         def get_printers():
             try:
-                printers = self.application.printers.get_all_printers()
+                printers = self.application.printers.get_all_printers_with_status()
                 return jsonify(printers)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
@@ -70,11 +70,11 @@ class FlaskModule:
         @self.app.route("/api/printers/<string:ip>", methods=['GET'])
         def get_printer(ip):
             try:
-                printer = self.application.printers.get_printer_by_ip(ip)
-                if printer:
-                    return jsonify(printer[0])
+                printer = self.application.printers.get_printer_status(ip)
+                if "error" in printer:
+                    return jsonify(printer), 404
                 else:
-                    return jsonify({"error": "Printer not found"}), 404
+                    return jsonify(printer)
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
@@ -125,6 +125,14 @@ class FlaskModule:
                     return jsonify({"error": "Failed to delete printer"}), 500
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/printers/count", methods=['GET'])
+        def get_printer_count():
+            try:
+                count = self.application.printers.get_printer_count()
+                return jsonify({"count": count})
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
         
         @self.app.route("/api/bitmap-settings", methods=['POST'])
         def save_bitmap_settings():
@@ -146,7 +154,13 @@ class FlaskModule:
                 print(f"Icon items: {data.get('iconItems', [])}")
                 print(f"Barcode items: {data.get('barcodeItems', [])}")
                 
-                return jsonify({"message": "Bitmap settings saved successfully"})
+                # Logo.bmp dosyasını döndür
+                current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                logo_path = os.path.join(current_dir, "logo.bmp")
+                if os.path.exists(logo_path):
+                    return send_file(logo_path, mimetype='image/bmp')
+                else:
+                    return jsonify({"error": "Logo file not found"}), 404
                 
             except Exception as e:
                 return jsonify({"error": str(e)}), 500

@@ -1,12 +1,13 @@
 from backend.databaseModule.printers import Printers
 from backend.flaskModule import FlaskModule
+from backend.tscPrinterModule import TSCPrinter
 import time
 
 class Application:
     def __init__(self):
         self.printers = Printers()
         self.flaskModule = FlaskModule(self)
-
+        
     def run(self):
         self.flaskModule.run()
 

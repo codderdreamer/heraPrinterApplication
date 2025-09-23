@@ -7,6 +7,8 @@ export interface Printer {
   dpi: number;
   width: number;
   height: number;
+  is_online?: boolean;
+  status?: string;
 }
 
 class ApiService {
@@ -63,6 +65,26 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify(settings),
     });
+  }
+
+  async getLogo(settings: any): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/bitmap-settings`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(settings),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
+    return response.blob();
+  }
+
+  async getPrinterCount(): Promise<{ count: number }> {
+    return this.request<{ count: number }>('/printers/count');
   }
 }
 

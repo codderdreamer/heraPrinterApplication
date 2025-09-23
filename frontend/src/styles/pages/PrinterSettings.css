@@ -11,6 +11,51 @@
   margin-bottom: 2rem;
 }
 
+/* Printer Dashboard */
+.printer-dashboard {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.dashboard-card {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  transition: transform 0.3s ease;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+}
+
+.dashboard-card h3 {
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.dashboard-number {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: white;
+  margin: 0;
+}
+
+.dashboard-number.online {
+  color: #4CAF50;
+}
+
+.dashboard-number.offline {
+  color: #f44336;
+}
+
 .add-printer-form {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
@@ -45,6 +90,19 @@
 @media (max-width: 768px) {
   .printer-settings {
     padding: 1rem;
+  }
+  
+  .printer-dashboard {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .dashboard-card {
+    padding: 1rem;
+  }
+  
+  .dashboard-number {
+    font-size: 2rem;
   }
   
   .add-printer-form {

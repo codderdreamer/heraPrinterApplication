@@ -50,6 +50,24 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [nextBarcodeId, setNextBarcodeId] = useState(1);
 
   const [saveStatus, setSaveStatus] = useState<string>('');
+  const [logoUrl, setLogoUrl] = useState<string>('');
+
+  // Logo'yu almak için fonksiyon
+  const fetchLogo = useCallback(async () => {
+    try {
+      const settings = {
+        textItems,
+        iconItems,
+        barcodeItems
+      };
+      
+      const blob = await apiService.getLogo({ ...settings, ip: printer.ip });
+      const url = URL.createObjectURL(blob);
+      setLogoUrl(url);
+    } catch (error) {
+      console.error('Error fetching logo:', error);
+    }
+  }, [textItems, iconItems, barcodeItems, printer.ip]);
 
   // Otomatik kaydetme fonksiyonu
   const saveSettings = useCallback(async () => {
@@ -82,6 +100,11 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
     return () => clearTimeout(timeoutId);
   }, [textItems, iconItems, barcodeItems, saveSettings]);
+
+  // Component mount olduğunda logo'yu al
+  useEffect(() => {
+    fetchLogo();
+  }, [fetchLogo]);
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -491,7 +514,11 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
             <div 
               className="bitmap-preview"
               style={{
-                aspectRatio: `${widthPx} / ${heightPx}`
+                aspectRatio: `${widthPx} / ${heightPx}`,
+                backgroundImage: logoUrl ? `url(${logoUrl})` : 'none',
+                backgroundSize: 'contain',
+                backgroundRepeat: 'no-repeat',
+                backgroundPosition: 'center'
               }}
             >
               {/* Text Preview - Multiple texts */}

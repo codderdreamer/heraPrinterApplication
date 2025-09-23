@@ -8,6 +8,8 @@ const PrinterSettings: React.FC = () => {
   const [printers, setPrinters] = useState<Printer[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [printerCount, setPrinterCount] = useState(0);
+  const [onlineCount, setOnlineCount] = useState(0);
   const [formData, setFormData] = useState({
     ip: '',
     name: '',
@@ -26,6 +28,11 @@ const PrinterSettings: React.FC = () => {
       setLoading(true);
       const data = await apiService.getPrinters();
       setPrinters(data);
+      
+      // Count online printers
+      const onlineCount = data.filter(printer => printer.is_online).length;
+      setOnlineCount(onlineCount);
+      setPrinterCount(data.length);
     } catch (err) {
       setError('Printer listesi yüklenirken hata oluştu');
     } finally {
@@ -98,6 +105,22 @@ const PrinterSettings: React.FC = () => {
   return (
     <div className="printer-settings">
       <h1>Printer Ayarları</h1>
+      
+      {/* Printer Status Dashboard */}
+      <div className="printer-dashboard">
+        <div className="dashboard-card">
+          <h3>Toplam Printer</h3>
+          <div className="dashboard-number">{printerCount}</div>
+        </div>
+        <div className="dashboard-card">
+          <h3>Çevrimiçi</h3>
+          <div className="dashboard-number online">{onlineCount}</div>
+        </div>
+        <div className="dashboard-card">
+          <h3>Çevrimdışı</h3>
+          <div className="dashboard-number offline">{printerCount - onlineCount}</div>
+        </div>
+      </div>
       
       <form onSubmit={handleSubmit} className="add-printer-form">
         <h2>Yeni Printer Ekle</h2>
