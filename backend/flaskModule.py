@@ -28,10 +28,15 @@ class FlaskModule:
         @self.app.route("/")
         def main():
             return render_template("index.html")
-        
+
+        @self.app.route("/bitmap-settings")
+        def bitmap_settings():
+            return render_template("index.html")
+
         @self.app.route("/printer-settings")
         def printer_settings():
             return render_template("index.html")
+        
         
         @self.app.route("/api/health")
         def health():
@@ -82,9 +87,15 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
-        @self.app.route("/api/printers/<string:ip>", methods=['GET'])
-        def get_printer(ip):
+        @self.app.route("/api/printer", methods=['POST'])
+        def get_printer():
             try:
+                data = request.get_json()
+                ip = data.get('ip')
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
                 printer_data = self.application.printers.get_printer_by_ip(ip)
                 if not printer_data:
                     return jsonify({"error": "Printer not found"}), 404
@@ -103,17 +114,17 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
-        @self.app.route("/api/printers/<string:ip>", methods=['PUT'])
-        def update_printer(ip):
+        @self.app.route("/api/printer/update", methods=['POST'])
+        def update_printer():
             try:
                 data = request.get_json()
-                new_ip = data.get('ip')
+                ip = data.get('ip')
                 name = data.get('name')
                 dpi = data.get('dpi')
                 width = data.get('width')
                 height = data.get('height')
                 
-                if not all([new_ip, name, dpi, width, height]):
+                if not all([ip, name, dpi, width, height]):
                     return jsonify({"error": "Missing required fields"}), 400
                 
                 # Önce mevcut printer'ı bul
@@ -123,7 +134,7 @@ class FlaskModule:
                 
                 printer_id = existing_printer[0]['id']
                 success = self.application.printers.update_printer(
-                    printer_id, new_ip, name, dpi, width, height
+                    printer_id, ip, name, dpi, width, height
                 )
                 
                 if success:
@@ -134,9 +145,15 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
-        @self.app.route("/api/printers/<string:ip>", methods=['DELETE'])
-        def delete_printer(ip):
+        @self.app.route("/api/printer/delete", methods=['POST'])
+        def delete_printer():
             try:
+                data = request.get_json()
+                ip = data.get('ip')
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
                 # Önce mevcut printer'ı bul
                 existing_printer = self.application.printers.get_printer_by_ip(ip)
                 if not existing_printer:
@@ -159,11 +176,15 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/printers/<string:ip>/print", methods=['POST'])
-        def print_to_printer(ip):
+        @self.app.route("/api/printer/print", methods=['POST'])
+        def print_to_printer():
             try:
                 data = request.get_json()
+                ip = data.get('ip')
                 print_type = data.get('type', 'bmp')  # 'bmp' or 'text'
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
                 
                 # Get printer info from database
                 printer_data = self.application.printers.get_printer_by_ip(ip)
@@ -196,12 +217,16 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
-        @self.app.route("/api/logo/<string:printer_ip>", methods=['GET'])
-        def get_printer_logo(printer_ip):
+        @self.app.route("/api/printer/logo", methods=['POST'])
+        def get_printer_logo():
             """Get the bitmap file for a specific printer"""
             try:
-                # Get the settings name from query parameter, default to 'default'
-                settings_name = request.args.get('name', 'default')
+                data = request.get_json()
+                printer_ip = data.get('ip')
+                settings_name = data.get('name', 'default')
+                
+                if not printer_ip:
+                    return jsonify({"error": "IP is required"}), 400
                 
                 # Check if printer exists
                 existing_printer = self.application.printers.get_printer_by_ip(printer_ip)
@@ -317,10 +342,16 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/bitmap-settings/<string:ip>", methods=['GET'])
-        def get_bitmap_settings(ip):
+        @self.app.route("/api/bitmap-settings/get", methods=['POST'])
+        def get_bitmap_settings():
             try:
-                name = request.args.get('name', None)
+                data = request.get_json()
+                ip = data.get('ip')
+                name = data.get('name', None)
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
                 print(f"Getting bitmap settings for {ip} with name: {name}")
                 
                 if name:
@@ -362,9 +393,16 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/bitmap-settings/<string:ip>/<string:name>", methods=['DELETE'])
-        def delete_bitmap_settings(ip, name):
+        @self.app.route("/api/bitmap-settings/delete", methods=['POST'])
+        def delete_bitmap_settings():
             try:
+                data = request.get_json()
+                ip = data.get('ip')
+                name = data.get('name')
+                
+                if not ip or not name:
+                    return jsonify({"error": "IP and name are required"}), 400
+                
                 success = self.application.printers.delete_bitmap_settings(ip, name)
                 
                 if success:
@@ -374,6 +412,15 @@ class FlaskModule:
                     
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
+        
+        # Catch-all route for React Router (SPA support) - MUST BE LAST
+        @self.app.route('/<path:path>')
+        def catch_all(path):
+            # API routes should not be caught
+            if path.startswith('api/'):
+                return jsonify({"error": "API endpoint not found"}), 404
+            # Serve React app for all other routes
+            return render_template("index.html")
         
     def run(self):
         try:

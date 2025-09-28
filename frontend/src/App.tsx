@@ -16,7 +16,7 @@ function App() {
           <Routes>
             <Route path="/" element={<PrinterSettings />} />
             <Route path="/printer-settings" element={<PrinterSettings />} />
-            <Route path="/bitmap-settings/:ip" element={<BitmapSettingsWrapper />} />
+            <Route path="/bitmap-settings" element={<BitmapSettingsWrapper />} />
           </Routes>
         </main>
       </div>
@@ -26,16 +26,22 @@ function App() {
 
 // BitmapSettings wrapper component to handle routing
 function BitmapSettingsWrapper() {
-  const { ip } = useParams<{ ip: string }>();
   const navigate = useNavigate();
-  
   const [printer, setPrinter] = useState<Printer | null>(null);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchPrinter = async () => {
       try {
-        const data = await apiService.getPrinter(ip!);
+        // localStorage'dan IP'yi al
+        const ip = localStorage.getItem('selectedPrinterIp');
+        
+        if (!ip) {
+          navigate('/printer-settings');
+          return;
+        }
+        
+        const data = await apiService.getPrinter(ip);
         setPrinter(data);
       } catch (error) {
         console.error('Error fetching printer:', error);
@@ -45,10 +51,8 @@ function BitmapSettingsWrapper() {
       }
     };
     
-    if (ip) {
-      fetchPrinter();
-    }
-  }, [ip, navigate]);
+    fetchPrinter();
+  }, [navigate]);
   
   const handleBack = () => {
     navigate('/printer-settings');

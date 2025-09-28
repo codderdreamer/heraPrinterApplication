@@ -33,7 +33,10 @@ class ApiService {
   }
 
   async getPrinter(ip: string): Promise<Printer> {
-    return this.request<Printer>(`/printers/${ip}`);
+    return this.request<Printer>('/printer', {
+      method: 'POST',
+      body: JSON.stringify({ ip }),
+    });
   }
 
   async createPrinter(printer: Omit<Printer, 'id'>): Promise<void> {
@@ -44,15 +47,16 @@ class ApiService {
   }
 
   async updatePrinter(ip: string, printer: Omit<Printer, 'id'>): Promise<void> {
-    return this.request<void>(`/printers/${ip}`, {
-      method: 'PUT',
-      body: JSON.stringify(printer),
+    return this.request<void>('/printer/update', {
+      method: 'POST',
+      body: JSON.stringify({ ...printer, ip }),
     });
   }
 
   async deletePrinter(ip: string): Promise<void> {
-    return this.request<void>(`/printers/${ip}`, {
-      method: 'DELETE',
+    return this.request<void>('/printer/delete', {
+      method: 'POST',
+      body: JSON.stringify({ ip }),
     });
   }
 
@@ -61,8 +65,12 @@ class ApiService {
   }
 
   async getLogo(printerIp: string, settingsName: string = 'default'): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/logo/${printerIp}?name=${encodeURIComponent(settingsName)}`, {
-      method: 'GET',
+    const response = await fetch(`${API_BASE_URL}/printer/logo`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ ip: printerIp, name: settingsName }),
     });
 
     if (!response.ok) {
@@ -83,9 +91,9 @@ class ApiService {
     x?: number;
     y?: number;
   }): Promise<void> {
-    return this.request<void>(`/printers/${ip}/print`, {
+    return this.request<void>('/printer/print', {
       method: 'POST',
-      body: JSON.stringify(printData),
+      body: JSON.stringify({ ip, ...printData }),
     });
   }
 
@@ -120,13 +128,16 @@ class ApiService {
     name?: string;
     message?: string;
   }> {
-    const url = name ? `/bitmap-settings/${ip}?name=${encodeURIComponent(name)}` : `/bitmap-settings/${ip}`;
-    return this.request(url);
+    return this.request('/bitmap-settings/get', {
+      method: 'POST',
+      body: JSON.stringify({ ip, name }),
+    });
   }
 
   async deleteBitmapSettings(ip: string, name: string): Promise<void> {
-    return this.request<void>(`/bitmap-settings/${ip}/${encodeURIComponent(name)}`, {
-      method: 'DELETE',
+    return this.request<void>('/bitmap-settings/delete', {
+      method: 'POST',
+      body: JSON.stringify({ ip, name }),
     });
   }
 }

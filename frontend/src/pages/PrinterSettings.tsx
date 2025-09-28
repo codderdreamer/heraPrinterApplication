@@ -95,7 +95,10 @@ const PrinterSettings: React.FC = () => {
   };
 
   const handleConfigureBitmap = (ip: string) => {
-    navigate(`/bitmap-settings/${ip}`);
+    // IP'yi localStorage'a kaydet
+    localStorage.setItem('selectedPrinterIp', ip);
+    // Temiz URL ile navigate et
+    navigate('/bitmap-settings');
   };
 
   if (loading) {

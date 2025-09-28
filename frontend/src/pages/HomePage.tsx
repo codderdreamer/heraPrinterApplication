@@ -34,8 +34,10 @@ const HomePage: React.FC = () => {
   };
 
   const handleConfigureBitmap = (ip: string) => {
+    // IP'yi localStorage'a kaydet
+    localStorage.setItem('selectedPrinterIp', ip);
     // Navigate to bitmap settings page
-    window.location.href = `/bitmap-settings/${ip}`;
+    window.location.href = '/bitmap-settings';
   };
 
   if (loading) {
