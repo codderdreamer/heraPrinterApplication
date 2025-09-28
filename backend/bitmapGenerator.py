@@ -311,7 +311,7 @@ class BitmapGenerator:
         
         self.bitmap_finish()
 
-    def create_from_frontend_data(self, text_items: List[Dict], icon_items: List[Dict], barcode_items: List[Dict]):
+    def create_from_frontend_data(self, text_items: List[Dict], value_items: List[Dict], icon_items: List[Dict], barcode_items: List[Dict]):
         """Create bitmap from frontend data format"""
         self.bitmap_init()
         
@@ -324,6 +324,17 @@ class BitmapGenerator:
                     text_item.get("y", 0),
                     text_item.get("fontSize", 12),
                     text_item.get("fontFamily", "Arial")
+                )
+        
+        # Process value items (same as text items)
+        for value_item in value_items:
+            if value_item.get("content"):
+                self.set_text(
+                    value_item["content"],
+                    value_item.get("x", 0),
+                    value_item.get("y", 0),
+                    value_item.get("fontSize", 12),
+                    value_item.get("fontFamily", "Arial")
                 )
         
         # Process icon items

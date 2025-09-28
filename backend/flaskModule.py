@@ -266,6 +266,7 @@ class FlaskModule:
                     )
                     generator.create_from_frontend_data(
                         settings_data.get('textItems', []), 
+                        settings_data.get('valueItems', []),
                         settings_data.get('iconItems', []), 
                         settings_data.get('barcodeItems', [])
                     )
@@ -297,12 +298,14 @@ class FlaskModule:
                 
                 # Get bitmap settings data
                 text_items = data.get('textItems', [])
+                value_items = data.get('valueItems', [])
                 icon_items = data.get('iconItems', [])
                 barcode_items = data.get('barcodeItems', [])
                 
                 # Create settings data structure
                 settings_data = {
                     "textItems": text_items,
+                    "valueItems": value_items,
                     "iconItems": icon_items,
                     "barcodeItems": barcode_items
                 }
@@ -325,7 +328,7 @@ class FlaskModule:
                             printer_info["dpi"],
                             f"bitmap_{ip}_{name}.bmp"
                         )
-                        generator.create_from_frontend_data(text_items, icon_items, barcode_items)
+                        generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
                         
                         # Return the generated bitmap file
                         bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")

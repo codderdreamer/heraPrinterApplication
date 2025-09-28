@@ -16,6 +16,15 @@ interface TextItem {
   fontFamily: string;
 }
 
+interface ValueItem {
+  id: number;
+  content: string;
+  x: number;
+  y: number;
+  fontSize: number;
+  fontFamily: string;
+}
+
 interface IconItem {
   id: number;
   x: number;
@@ -42,6 +51,9 @@ interface BarcodeItem {
 const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [textItems, setTextItems] = useState<TextItem[]>([]);
   const [nextTextId, setNextTextId] = useState(1);
+
+  const [valueItems, setValueItems] = useState<ValueItem[]>([]);
+  const [nextValueId, setNextValueId] = useState(1);
 
   const [iconItems, setIconItems] = useState<IconItem[]>([]);
   const [nextIconId, setNextIconId] = useState(1);
@@ -73,6 +85,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     try {
       const settings = {
         textItems,
+        valueItems,
         iconItems,
         barcodeItems
       };
@@ -85,7 +98,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     } catch (error) {
       console.error('Error updating bitmap preview:', error);
     }
-  }, [textItems, iconItems, barcodeItems, printer.ip, settingsName, fetchLogo]);
+  }, [textItems, valueItems, iconItems, barcodeItems, printer.ip, settingsName, fetchLogo]);
 
   // Otomatik kaydetme kaldırıldı - sadece manuel kaydetme kullanılacak
 
@@ -97,6 +110,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       // Mevcut ayarları kaydet ve bitmap oluştur
       const settings = {
         textItems,
+        valueItems,
         iconItems,
         barcodeItems
       };
@@ -128,6 +142,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       
       const settings = {
         textItems,
+        valueItems,
         iconItems,
         barcodeItems
       };
@@ -173,6 +188,17 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
           console.log('No text items found or not array');
           setTextItems([]);
           setNextTextId(1);
+        }
+        
+        // Load value items
+        if (settings.valueItems && Array.isArray(settings.valueItems)) {
+          console.log('Loading value items:', settings.valueItems);
+          setValueItems(settings.valueItems);
+          setNextValueId(settings.valueItems.length > 0 ? Math.max(...settings.valueItems.map((item: any) => item.id)) + 1 : 1);
+        } else {
+          console.log('No value items found or not array');
+          setValueItems([]);
+          setNextValueId(1);
         }
         
         // Load icon items
@@ -233,7 +259,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     }, 1000); // 1 saniye bekle (debounce)
 
     return () => clearTimeout(timeoutId);
-  }, [textItems, iconItems, barcodeItems, updateBitmapPreview]);
+    }, [textItems, valueItems, iconItems, barcodeItems, updateBitmapPreview]);
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -266,6 +292,39 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const deleteTextItem = (id: number) => {
     setTextItems(prev => prev.filter(item => item.id !== id));
+  };
+
+  const addNewValue = () => {
+    const newValue: ValueItem = {
+      id: nextValueId,
+      content: '',
+      x: 0,
+      y: 0,
+      fontSize: 12,
+      fontFamily: 'Arial'
+    };
+    console.log('Adding new value:', newValue);
+    setValueItems(prev => {
+      const newItems = [...prev, newValue];
+      console.log('Updated valueItems:', newItems);
+      return newItems;
+    });
+    setNextValueId(prev => prev + 1);
+  };
+
+  const updateValueItem = (id: number, field: string, value: string | number) => {
+    console.log(`Updating value item ${id}, field: ${field}, value: ${value}`);
+    setValueItems(prev => {
+      const updated = prev.map(item => 
+        item.id === id ? { ...item, [field]: value } : item
+      );
+      console.log('Updated valueItems after update:', updated);
+      return updated;
+    });
+  };
+
+  const deleteValueItem = (id: number) => {
+    setValueItems(prev => prev.filter(item => item.id !== id));
   };
 
   const addNewIcon = () => {
@@ -449,6 +508,89 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   <select
                     value={textItem.fontFamily}
                     onChange={(e) => updateTextItem(textItem.id, 'fontFamily', e.target.value)}
+                  >
+                    <option value="Arial">Arial</option>
+                    <option value="Arial Bold">Arial Bold</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Trebuchet MS">Trebuchet MS</option>
+                    <option value="Helvetica">Helvetica</option>
+                  </select>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="settings-section">
+            <h3>Value Bilgileri</h3>
+            
+            <button 
+              className="btn btn-secondary add-text-btn"
+              onClick={addNewValue}
+            >
+              + Value Ekle
+            </button>
+
+            {valueItems.map((valueItem) => (
+              <div key={valueItem.id} className="text-item">
+                <div className="text-item-header">
+                  <span>Value #{valueItem.id}</span>
+                  <button 
+                    className="btn btn-danger delete-text-btn"
+                    onClick={() => deleteValueItem(valueItem.id)}
+                  >
+                    Sil
+                  </button>
+                </div>
+                
+                <div className="form-group">
+                  <label>Value:</label>
+                  <input
+                    type="text"
+                    value={valueItem.content}
+                    onChange={(e) => updateValueItem(valueItem.id, 'content', e.target.value)}
+                    placeholder="Yazılacak value..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label>X Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={valueItem.x}
+                    onChange={(e) => updateValueItem(valueItem.id, 'x', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Y Koordinatı:</label>
+                  <input
+                    type="number"
+                    value={valueItem.y}
+                    onChange={(e) => updateValueItem(valueItem.id, 'y', e.target.value === '' ? '' : parseInt(e.target.value))}
+                    min="0"
+                    placeholder="0"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Boyutu:</label>
+                  <input
+                    type="number"
+                    value={valueItem.fontSize}
+                    onChange={(e) => updateValueItem(valueItem.id, 'fontSize', parseInt(e.target.value))}
+                    min="8"
+                    max="72"
+                  />
+                </div>
+                <div className="form-group">
+                  <label>Font Ailesi:</label>
+                  <select
+                    value={valueItem.fontFamily}
+                    onChange={(e) => updateValueItem(valueItem.id, 'fontFamily', e.target.value)}
                   >
                     <option value="Arial">Arial</option>
                     <option value="Arial Bold">Arial Bold</option>
@@ -712,6 +854,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
               <p>Çözünürlük: {printer.dpi} DPI</p>
               <p>Oran: {printer.width}:{printer.height}</p>
               <p>Text Sayısı: {textItems.length}</p>
+              <p>Value Sayısı: {valueItems.length}</p>
               <p>İkon Sayısı: {iconItems.length}</p>
               <p>Barkod Sayısı: {barcodeItems.length}</p>
             </div>
