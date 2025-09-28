@@ -81,3 +81,21 @@ p {
 .fade-in {
   animation: fadeIn 0.6s ease-out;
 }
+
+/* Select dropdown styling fix */
+select {
+  color: white !important;
+}
+
+select option {
+  background-color: #333 !important;
+  color: white !important;
+  padding: 0.5rem !important;
+}
+
+select option:hover,
+select option:focus,
+select option:checked {
+  background-color: #555 !important;
+  color: white !important;
+}

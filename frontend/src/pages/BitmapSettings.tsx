@@ -56,17 +56,36 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const [showSaveDialog, setShowSaveDialog] = useState<boolean>(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState<boolean>(false);
 
-  // Logo'yu almak için fonksiyon (sadece component mount olduğunda)
+  // Logo'yu almak için fonksiyon (printer'a özel bitmap)
   const fetchLogo = useCallback(async () => {
     try {
-      // Sadece mevcut logo.bmp dosyasını al
-      const blob = await apiService.getLogo();
+      // Printer'a özel bitmap dosyasını al
+      const blob = await apiService.getLogo(printer.ip, settingsName);
       const url = URL.createObjectURL(blob);
       setLogoUrl(url);
     } catch (error) {
       console.error('Error fetching logo:', error);
     }
-  }, []);
+  }, [printer.ip, settingsName]);
+
+  // Form değiştiğinde bitmap'i otomatik güncelle
+  const updateBitmapPreview = useCallback(async () => {
+    try {
+      const settings = {
+        textItems,
+        iconItems,
+        barcodeItems
+      };
+      
+      // Mevcut ayarları kaydet ve bitmap oluştur
+      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      
+      // Bitmap'i yeniden al
+      fetchLogo();
+    } catch (error) {
+      console.error('Error updating bitmap preview:', error);
+    }
+  }, [textItems, iconItems, barcodeItems, printer.ip, settingsName, fetchLogo]);
 
   // Otomatik kaydetme kaldırıldı - sadece manuel kaydetme kullanılacak
 
@@ -122,6 +141,10 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       setSaveStatus('Kaydedildi!');
       setShowSaveDialog(false);
       setHasUnsavedChanges(false); // Artık kaydedildi
+      
+      // Logo'yu yenile
+      fetchLogo();
+      
       setTimeout(() => setSaveStatus(''), 3000);
     } catch (error) {
       console.error('Save error:', error);
@@ -176,6 +199,10 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
         
         setSaveStatus('Ayarlar yüklendi!');
         setHasUnsavedChanges(false); // Yeni ayarlar yüklendi
+        
+        // Logo'yu yenile
+        fetchLogo();
+        
         setTimeout(() => setSaveStatus(''), 3000);
       } else {
         console.log('No settings found');
@@ -195,6 +222,18 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
     // Sayfa açıldığında default ayarları yükle
     handleLoadSettings('default');
   }, []); // Sadece component mount olduğunda çalışsın
+
+  // Form değiştiğinde bitmap'i otomatik güncelle (debounced)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Eğer veriler varsa ve component mount olduysa güncelle
+      if (textItems.length > 0 || iconItems.length > 0 || barcodeItems.length > 0) {
+        updateBitmapPreview();
+      }
+    }, 1000); // 1 saniye bekle (debounce)
+
+    return () => clearTimeout(timeoutId);
+  }, [textItems, iconItems, barcodeItems, updateBitmapPreview]);
 
   const addNewText = () => {
     const newText: TextItem = {
@@ -412,8 +451,14 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     onChange={(e) => updateTextItem(textItem.id, 'fontFamily', e.target.value)}
                   >
                     <option value="Arial">Arial</option>
+                    <option value="Arial Bold">Arial Bold</option>
                     <option value="Times New Roman">Times New Roman</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Verdana">Verdana</option>
                     <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Trebuchet MS">Trebuchet MS</option>
                     <option value="Helvetica">Helvetica</option>
                   </select>
                 </div>
@@ -608,8 +653,14 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     onChange={(e) => updateBarcodeItem(barcodeItem.id, 'fontFamily', e.target.value)}
                   >
                     <option value="Arial">Arial</option>
+                    <option value="Arial Bold">Arial Bold</option>
                     <option value="Times New Roman">Times New Roman</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Verdana">Verdana</option>
                     <option value="Courier New">Courier New</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Trebuchet MS">Trebuchet MS</option>
                     <option value="Helvetica">Helvetica</option>
                   </select>
                 </div>
@@ -641,75 +692,20 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 backgroundImage: logoUrl ? `url(${logoUrl})` : 'none',
                 backgroundSize: 'contain',
                 backgroundRepeat: 'no-repeat',
-                backgroundPosition: 'center'
+                backgroundPosition: 'center',
+                border: '1px solid #ccc',
+                minHeight: '200px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                backgroundColor: '#f9f9f9'
               }}
             >
-              {/* Text Preview - Multiple texts */}
-              {textItems.map((textItem) => (
-                textItem.content && (
-                  <div 
-                    key={textItem.id}
-                    className="preview-text"
-                    style={{
-                      position: 'absolute',
-                      left: `${textItem.x || 0}px`,
-                      top: `${textItem.y || 0}px`,
-                      fontSize: `${textItem.fontSize}px`,
-                      fontFamily: textItem.fontFamily,
-                      color: '#000000'
-                    }}
-                  >
-                    {textItem.content}
-                  </div>
-                )
-              ))}
-
-              {/* Icon Preview - Multiple icons */}
-              {iconItems.map((iconItem) => (
-                iconItem.iconFile && (
-                  <img
-                    key={iconItem.id}
-                    src={iconItem.iconFile}
-                    alt="Icon"
-                    className="preview-icon"
-                    style={{
-                      position: 'absolute',
-                      left: `${iconItem.x || 0}px`,
-                      top: `${iconItem.y || 0}px`,
-                      width: `${iconItem.width}px`,
-                      height: `${iconItem.height}px`,
-                      objectFit: 'contain'
-                    }}
-                  />
-                )
-              ))}
-
-              {/* Barcode Preview - Multiple barcodes */}
-              {barcodeItems.map((barcodeItem) => (
-                barcodeItem.data && (
-                  <div
-                    key={barcodeItem.id}
-                    className="preview-barcode"
-                    style={{
-                      position: 'absolute',
-                      left: `${barcodeItem.x || 0}px`,
-                      top: `${barcodeItem.y || 0}px`,
-                      width: `${barcodeItem.width}px`,
-                      height: `${barcodeItem.height}px`,
-                      backgroundColor: '#000000',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: '#ffffff',
-                      fontSize: `${barcodeItem.fontSize}px`,
-                      fontFamily: barcodeItem.fontFamily,
-                      border: '1px solid #333'
-                    }}
-                  >
-                    {barcodeItem.data}
-                  </div>
-                )
-              ))}
+              {!logoUrl && (
+                <div style={{ color: '#666', fontSize: '14px' }}>
+                  Bitmap önizlemesi yükleniyor...
+                </div>
+              )}
             </div>
             <div className="preview-info">
               <p>Boyut: {widthPx} x {heightPx} px</p>

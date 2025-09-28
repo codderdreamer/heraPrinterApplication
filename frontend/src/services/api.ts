@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = 'http://localhost:80/api';
 
 export interface Printer {
   id: number;
@@ -60,8 +60,8 @@ class ApiService {
     return this.request<{ status: string; message: string }>('/health');
   }
 
-  async getLogo(): Promise<Blob> {
-    const response = await fetch(`${API_BASE_URL}/logo`, {
+  async getLogo(printerIp: string, settingsName: string = 'default'): Promise<Blob> {
+    const response = await fetch(`${API_BASE_URL}/logo/${printerIp}?name=${encodeURIComponent(settingsName)}`, {
       method: 'GET',
     });
 

@@ -3,6 +3,8 @@ from barcode import Code128, EAN13, Code39
 from barcode.writer import ImageWriter
 from io import BytesIO
 import json
+import os
+import platform
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -17,6 +19,86 @@ class BitmapGenerator:
         self.draw = None
         self.img = None
 
+    def _get_system_font_paths(self):
+        """Get common system font paths based on operating system"""
+        system = platform.system().lower()
+        font_paths = {}
+        
+        if system == "windows":
+            windows_fonts = os.environ.get('WINDIR', 'C:\\Windows') + '\\Fonts\\'
+            font_paths = {
+                'arial': os.path.join(windows_fonts, 'arial.ttf'),
+                'arial bold': os.path.join(windows_fonts, 'arialbd.ttf'),
+                'times': os.path.join(windows_fonts, 'times.ttf'),
+                'times new roman': os.path.join(windows_fonts, 'times.ttf'),
+                'courier': os.path.join(windows_fonts, 'cour.ttf'),
+                'courier new': os.path.join(windows_fonts, 'cour.ttf'),
+                'calibri': os.path.join(windows_fonts, 'calibri.ttf'),
+                'tahoma': os.path.join(windows_fonts, 'tahoma.ttf'),
+                'verdana': os.path.join(windows_fonts, 'verdana.ttf'),
+                'georgia': os.path.join(windows_fonts, 'georgia.ttf'),
+                'trebuchet ms': os.path.join(windows_fonts, 'trebuc.ttf')
+            }
+        elif system == "darwin":  # macOS
+            font_paths = {
+                'arial': '/System/Library/Fonts/Arial.ttf',
+                'times': '/System/Library/Fonts/Times.ttc',
+                'times new roman': '/System/Library/Fonts/Times.ttc',
+                'courier': '/System/Library/Fonts/Courier New.ttf',
+                'courier new': '/System/Library/Fonts/Courier New.ttf',
+                'helvetica': '/System/Library/Fonts/Helvetica.ttc'
+            }
+        else:  # Linux and others
+            font_paths = {
+                'arial': '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+                'times': '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf',
+                'times new roman': '/usr/share/fonts/truetype/liberation/LiberationSerif-Regular.ttf',
+                'courier': '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
+                'courier new': '/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf',
+                'dejavu sans': '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf'
+            }
+        
+        return font_paths
+
+    def _resolve_font_path(self, font_family: str) -> str:
+        """Resolve font family name to actual font file path"""
+        # If it's already a full path, use it
+        if os.path.isfile(font_family):
+            return font_family
+        
+        # If it's a .ttf file in current directory, use it
+        if font_family.endswith('.ttf') and os.path.isfile(font_family):
+            return font_family
+        
+        # Get system font paths
+        font_paths = self._get_system_font_paths()
+        
+        # Normalize font family name for lookup
+        normalized_name = font_family.lower().strip()
+        
+        # Try direct lookup
+        if normalized_name in font_paths:
+            font_path = font_paths[normalized_name]
+            if os.path.isfile(font_path):
+                return font_path
+        
+        # Try common variations
+        variations = [
+            normalized_name,
+            normalized_name.replace(' ', ''),
+            normalized_name + '.ttf',
+            normalized_name.replace(' ', '') + '.ttf'
+        ]
+        
+        for variation in variations:
+            if variation in font_paths:
+                font_path = font_paths[variation]
+                if os.path.isfile(font_path):
+                    return font_path
+        
+        # If not found, return None to use fallback
+        return None
+
     def _mm_to_px(self, mm: float) -> int:
         """Convert mm to pixels based on DPI"""
         dpmm = self.dpi / 25.4  # dots per mm
@@ -27,15 +109,52 @@ class BitmapGenerator:
         dpmm = self.dpi / 25.4  # dots per mm
         return px / dpmm
 
-    def _load_font(self, font_path: str = "arial.ttf", font_size_px: int = 30):
-        """Load font with fallbacks"""
-        try:
-            return ImageFont.truetype(font_path, font_size_px)
-        except OSError:
+    def _load_font(self, font_family: str = "Arial", font_size_px: int = 30):
+        """Load font with improved resolution and fallbacks"""
+        # First try to resolve the font family to a system font path
+        font_path = self._resolve_font_path(font_family)
+        
+        if font_path:
             try:
-                return ImageFont.truetype("DejaVuSans.ttf", font_size_px)
-            except OSError:
-                return ImageFont.load_default()
+                print(f"Loading font: {font_path}")
+                return ImageFont.truetype(font_path, font_size_px)
+            except (OSError, UnicodeDecodeError) as e:
+                print(f"Error loading font {font_path}: {e}")
+        
+        # Fallback to common system fonts
+        fallback_fonts = []
+        system = platform.system().lower()
+        
+        if system == "windows":
+            fallback_fonts = [
+                os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'arial.ttf'),
+                os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'calibri.ttf'),
+                os.path.join(os.environ.get('WINDIR', 'C:\\Windows'), 'Fonts', 'tahoma.ttf')
+            ]
+        elif system == "darwin":
+            fallback_fonts = [
+                '/System/Library/Fonts/Arial.ttf',
+                '/System/Library/Fonts/Helvetica.ttc'
+            ]
+        else:
+            fallback_fonts = [
+                '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+                '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf'
+            ]
+        
+        # Try fallback fonts
+        for fallback_path in fallback_fonts:
+            try:
+                if os.path.isfile(fallback_path):
+                    print(f"Using fallback font: {fallback_path}")
+                    return ImageFont.truetype(fallback_path, font_size_px)
+            except (OSError, UnicodeDecodeError) as e:
+                print(f"Error loading fallback font {fallback_path}: {e}")
+                continue
+        
+        # Last resort - use default font
+        print("Using default PIL font")
+        return ImageFont.load_default()
 
     def set_label_scale(self):
         """Convert label dimensions from mm to pixels"""
@@ -44,9 +163,9 @@ class BitmapGenerator:
         height_px = int(round(self.height_mm * dpmm))
         return width_px, height_px, dpmm
 
-    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_path: str = "arial.ttf"):
+    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_family: str = "Arial"):
         """Add text to bitmap at specified coordinates"""
-        font = self._load_font(font_path, font_size_px)
+        font = self._load_font(font_family, font_size_px)
         self.draw.text((x, y), text, font=font, fill=0)
         bbox = self.draw.textbbox((x, y), text, font=font)
         print(f"Text '{text}' bbox: {bbox}")
@@ -170,7 +289,7 @@ class BitmapGenerator:
                     item["data"]["x"], 
                     item["data"]["y"], 
                     item["data"]["font_size"], 
-                    item["data"].get("font_path", "arial.ttf")
+                    item["data"].get("font_family", "Arial")
                 )
             elif item["type"] == "barcode":
                 self.set_barcode(
@@ -204,7 +323,7 @@ class BitmapGenerator:
                     text_item.get("x", 0),
                     text_item.get("y", 0),
                     text_item.get("fontSize", 12),
-                    text_item.get("fontFamily", "arial.ttf")
+                    text_item.get("fontFamily", "Arial")
                 )
         
         # Process icon items
@@ -227,3 +346,4 @@ class BitmapGenerator:
                 )
         
         self.bitmap_finish()
+

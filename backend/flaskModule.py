@@ -196,16 +196,63 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
         
-        @self.app.route("/api/logo", methods=['GET'])
-        def get_logo():
-            """Get the default logo.bmp file"""
+        @self.app.route("/api/logo/<string:printer_ip>", methods=['GET'])
+        def get_printer_logo(printer_ip):
+            """Get the bitmap file for a specific printer"""
             try:
-                logo_path = "logo.bmp"
-                if os.path.exists(logo_path):
-                    return send_file(logo_path, mimetype='image/bmp')
+                # Get the settings name from query parameter, default to 'default'
+                settings_name = request.args.get('name', 'default')
+                
+                # Check if printer exists
+                existing_printer = self.application.printers.get_printer_by_ip(printer_ip)
+                if not existing_printer:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                # Get bitmap settings from database
+                bitmap_settings = self.application.printers.get_bitmap_settings(printer_ip, settings_name)
+                if not bitmap_settings:
+                    # If no specific settings found, try to find any settings for this printer
+                    all_settings = self.application.printers.get_bitmap_settings(printer_ip)
+                    if all_settings:
+                        # Use the first available settings
+                        bitmap_settings = [all_settings[0]]
+                        settings_name = all_settings[0]['name']
+                    else:
+                        return jsonify({"error": "No bitmap settings found for this printer"}), 404
+                
+                # Check if the corresponding bitmap file exists
+                bitmap_filename = f"bitmap_{printer_ip}_{settings_name}.bmp"
+                bitmap_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), bitmap_filename)
+                
+                if os.path.exists(bitmap_path):
+                    return send_file(bitmap_path, mimetype='image/bmp')
                 else:
-                    return jsonify({"error": "Logo file not found"}), 404
+                    # If bitmap file doesn't exist, generate it from settings
+                    settings_data = json.loads(bitmap_settings[0]['settings_data'])
+                    printer_info = existing_printer[0]
+                    
+                    # Generate bitmap
+                    from backend.bitmapGenerator import BitmapGenerator
+                    generator = BitmapGenerator(
+                        printer_info["width"], 
+                        printer_info["height"], 
+                        printer_info["dpi"],
+                        bitmap_filename
+                    )
+                    generator.create_from_frontend_data(
+                        settings_data.get('textItems', []), 
+                        settings_data.get('iconItems', []), 
+                        settings_data.get('barcodeItems', [])
+                    )
+                    
+                    # Return the generated bitmap
+                    if os.path.exists(bitmap_path):
+                        return send_file(bitmap_path, mimetype='image/bmp')
+                    else:
+                        return jsonify({"error": "Failed to generate bitmap"}), 500
+                        
             except Exception as e:
+                print(f"Logo endpoint error: {e}")
                 return jsonify({"error": str(e)}), 500
 
         @self.app.route("/api/bitmap-settings", methods=['POST'])
@@ -340,6 +387,6 @@ class FlaskModule:
             print("  DELETE /api/printers/<ip> - Delete printer by IP")
             print("  GET  /api/health - Health check")
             print("  POST /api/bitmap-settings - Save bitmap settings")
-            self.app.run(use_reloader=False, host="127.0.0.1", port=8080, threaded=False)
+            self.app.run(use_reloader=False, host="127.0.0.1", port=80, threaded=False)
         except Exception as e:
             print("FlaskServer.py run Exception:", e)
