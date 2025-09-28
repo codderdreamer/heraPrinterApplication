@@ -18,6 +18,7 @@ interface TextItem {
 
 interface ValueItem {
   id: number;
+  valueId: string;  // Kullanıcının girdiği ID
   content: string;
   x: number;
   y: number;
@@ -297,6 +298,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const addNewValue = () => {
     const newValue: ValueItem = {
       id: nextValueId,
+      valueId: '',  // Kullanıcı dolduracak
       content: '',
       x: 0,
       y: 0,
@@ -547,6 +549,15 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   </button>
                 </div>
                 
+                <div className="form-group">
+                  <label>Value ID:</label>
+                  <input
+                    type="text"
+                    value={valueItem.valueId}
+                    onChange={(e) => updateValueItem(valueItem.id, 'valueId', e.target.value)}
+                    placeholder="Value ID girin (örn: PRODUCT_NAME)"
+                  />
+                </div>
                 <div className="form-group">
                   <label>Value:</label>
                   <input
