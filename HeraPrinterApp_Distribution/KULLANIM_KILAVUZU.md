@@ -7,14 +7,14 @@ Bu uygulama Python kurulumu gerektirmez. Tek bir executable dosya olarak çalı�
 ### Gereksinimler
 - Windows 10/11
 - Ağ bağlantısı (yazıcılar için)
-- Port 80 erişimi (web arayüzü için)
+- Port 8088 erişimi (web arayüzü için)
 
 ### Kurulum Adımları
 
 1. `HeraPrinterApp.exe` dosyasını istediğiniz klasöre kopyalayın
 2. Dosyaya çift tıklayarak uygulamayı başlatın
 3. Uygulama başladığında otomatik olarak web tarayıcınızda açılacaktır
-4. Eğer otomatik açılmazsa, tarayıcınızda `http://127.0.0.1:80` adresine gidin
+4. Eğer otomatik açılmazsa, tarayıcınızda `http://127.0.0.1:8088` adresine gidin
 
 ## Kullanım
 
@@ -45,7 +45,7 @@ Bu uygulama Python kurulumu gerektirmez. Tek bir executable dosya olarak çalı�
 - Yönetici olarak çalıştırmayı deneyin
 
 ### Web Arayüzü Açılmıyor
-- Port 80'in başka bir uygulama tarafından kullanılmadığından emin olun
+- Port 8088'in başka bir uygulama tarafından kullanılmadığından emin olun
 - Windows Firewall ayarlarını kontrol edin
 
 ### Yazıcı Bağlantı Sorunu

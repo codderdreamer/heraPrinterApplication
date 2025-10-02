@@ -427,8 +427,8 @@ class FlaskModule:
         
     def run(self):
         try:
-            print("Flask server starting on http://127.0.0.1:8080")
-            print("Frontend: http://127.0.0.1:8080")
+            print("Flask server starting on http://127.0.0.1:8088")
+            print("Frontend: http://127.0.0.1:8088")
             print("API endpoints:")
             print("  GET  /api/printers - List all printers")
             print("  POST /api/printers - Add new printer")
@@ -437,6 +437,6 @@ class FlaskModule:
             print("  DELETE /api/printers/<ip> - Delete printer by IP")
             print("  GET  /api/health - Health check")
             print("  POST /api/bitmap-settings - Save bitmap settings")
-            self.app.run(use_reloader=False, host="127.0.0.1", port=80, threaded=False)
+            self.app.run(use_reloader=False, host="127.0.0.1", port=8088, threaded=False)
         except Exception as e:
             print("FlaskServer.py run Exception:", e)
