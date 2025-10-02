@@ -437,6 +437,6 @@ class FlaskModule:
             print("  DELETE /api/printers/<ip> - Delete printer by IP")
             print("  GET  /api/health - Health check")
             print("  POST /api/bitmap-settings - Save bitmap settings")
-            self.app.run(use_reloader=False, host="127.0.0.1", port=8088, threaded=False)
+            self.app.run(use_reloader=False, host="0.0.0.0", port=8088, threaded=False)
         except Exception as e:
             print("FlaskServer.py run Exception:", e)
