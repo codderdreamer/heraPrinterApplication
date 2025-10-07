@@ -216,11 +216,6 @@ Thumbs.db
 bitmap_*.bmp
 generated_bitmap.bmp
 
-# Distribution folder (but allow exe in root)
-HeraPrinterApp_Distribution/
-
-# Allow main exe file in root directory
-!HeraPrinterApp.exe
 
 # Configuration files with sensitive data
 config.ini
