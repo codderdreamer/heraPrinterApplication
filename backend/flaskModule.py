@@ -247,7 +247,21 @@ class FlaskModule:
                 
                 # Check if the corresponding bitmap file exists
                 bitmap_filename = f"bitmap_{printer_ip}_{settings_name}.bmp"
-                bitmap_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), bitmap_filename)
+                # Try multiple possible paths for bitmap files
+                possible_paths = [
+                    os.path.join(os.path.dirname(os.path.dirname(__file__)), bitmap_filename),  # Project root
+                    os.path.join(os.path.dirname(__file__), bitmap_filename),  # Backend folder
+                    bitmap_filename  # Current directory
+                ]
+                
+                bitmap_path = None
+                for path in possible_paths:
+                    if os.path.exists(path):
+                        bitmap_path = path
+                        break
+                
+                if not bitmap_path:
+                    bitmap_path = possible_paths[0]  # Default to project root
                 
                 if os.path.exists(bitmap_path):
                     return send_file(bitmap_path, mimetype='image/bmp')
@@ -262,7 +276,7 @@ class FlaskModule:
                         printer_info["width"], 
                         printer_info["height"], 
                         printer_info["dpi"],
-                        bitmap_filename
+                        bitmap_path
                     )
                     generator.create_from_frontend_data(
                         settings_data.get('textItems', []), 
