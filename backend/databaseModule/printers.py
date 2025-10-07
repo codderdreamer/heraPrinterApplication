@@ -1,6 +1,13 @@
-from backend.databaseModule.databaseModule import DatabaseModule
 from typing import List, Dict, Any
-from backend.configModule import DatabaseConfig
+
+# Import with PyInstaller compatibility
+try:
+    from backend.databaseModule.databaseModule import DatabaseModule
+    from backend.configModule import DatabaseConfig
+except ImportError:
+    # Fallback for PyInstaller
+    from databaseModule import DatabaseModule
+    from configModule import DatabaseConfig
 
 class Printers(DatabaseModule):
     def __init__(self):

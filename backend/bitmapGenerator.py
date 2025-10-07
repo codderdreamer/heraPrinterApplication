@@ -360,8 +360,8 @@ class BitmapGenerator:
             print(f"Error initializing bitmap: {e}")
 
     def bitmap_finish(self):
-        try:
         """Save bitmap to file"""
+        try:
             self.img.save(self.filename, format="BMP")
         except Exception as e:
             print(f"Error saving bitmap: {e}")

@@ -4,8 +4,25 @@ from threading import Thread
 import os
 import json
 import sys
-from backend.tscPrinterModule import printer_manager
-from backend.bitmapGenerator import BitmapGenerator
+
+# Import with PyInstaller compatibility
+try:
+    from backend.tscPrinterModule import printer_manager
+    from backend.bitmapGenerator import BitmapGenerator
+except ImportError:
+    try:
+        # Fallback for PyInstaller
+        from tscPrinterModule import printer_manager
+        from bitmapGenerator import BitmapGenerator
+    except ImportError:
+        # Second fallback - try without backend prefix
+        import sys
+        import os
+        backend_path = os.path.join(os.path.dirname(__file__))
+        if backend_path not in sys.path:
+            sys.path.insert(0, backend_path)
+        from tscPrinterModule import printer_manager
+        from bitmapGenerator import BitmapGenerator
 
 class FlaskModule:
     def __init__(self, application) -> None:
