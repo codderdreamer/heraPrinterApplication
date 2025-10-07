@@ -67,4 +67,4 @@ Herhangi bir sorun yaşadığınızda, lütfen aşağıdaki bilgileri toplayın:
 
 ## Exe Oluşturma
 pyinstaller heraPrinterApp.spec
-py dist\HeraPrinterApp.exe HeraPrinterApp_Distribution\
+copy dist\HeraPrinterApp.exe HeraPrinterApp_Distribution\
