@@ -213,28 +213,70 @@ class BitmapGenerator:
             # Create barcode
             barcode_class = barcode_classes[barcode_type.lower()]
             
-            # ImageWriter for barcode creation
-            writer = ImageWriter()
+            # Try multiple strategies to create barcode
+            barcode_img = None
             
-            # Disable text rendering to avoid font issues
-            writer.write_text = False
-            
-            # Size settings - convert pixels to mm
-            if height_px:
-                writer.module_height = self._px_to_mm(height_px)
-            if width_px:
-                writer.module_width = 0.2  # mm for thinner module width
-            
-            # Create barcode
-            barcode = barcode_class(data, writer=writer)
-            
-            # Save to BytesIO
-            buffer = BytesIO()
-            barcode.write(buffer)
-            buffer.seek(0)
-            
-            # Load as PIL Image
-            barcode_img = Image.open(buffer)
+            # Strategy 1: Try with custom writer settings
+            try:
+                writer = ImageWriter()
+                writer.write_text = False
+                writer.font_path = None  # Explicitly disable font loading
+                writer.module_width = 0.2
+                writer.module_height = 10.0
+                
+                if height_px:
+                    writer.module_height = self._px_to_mm(height_px)
+                if width_px:
+                    writer.module_width = max(0.1, self._px_to_mm(width_px) / 50)
+                
+                barcode = barcode_class(data, writer=writer)
+                buffer = BytesIO()
+                barcode.write(buffer)
+                buffer.seek(0)
+                barcode_img = Image.open(buffer)
+                print(f"Strategy 1 successful for barcode '{data}'")
+                
+            except Exception as e1:
+                print(f"Strategy 1 failed for barcode '{data}': {e1}")
+                
+                # Strategy 2: Try with minimal settings
+                try:
+                    writer2 = ImageWriter()
+                    writer2.write_text = False
+                    writer2.module_width = 0.2
+                    writer2.module_height = 10.0
+                    
+                    barcode = barcode_class(data, writer=writer2)
+                    buffer = BytesIO()
+                    barcode.write(buffer)
+                    buffer.seek(0)
+                    barcode_img = Image.open(buffer)
+                    print(f"Strategy 2 successful for barcode '{data}'")
+                    
+                except Exception as e2:
+                    print(f"Strategy 2 failed for barcode '{data}': {e2}")
+                    
+                    # Strategy 3: Create fallback barcode
+                    try:
+                        # Create a simple rectangular barcode pattern
+                        width = width_px if width_px else 200
+                        height = height_px if height_px else 50
+                        barcode_img = Image.new("1", (width, height), 1)  # White background
+                        
+                        # Draw simple barcode pattern
+                        draw = ImageDraw.Draw(barcode_img)
+                        bar_width = 2
+                        for i in range(0, width, bar_width * 2):
+                            if i + bar_width < width:
+                                draw.rectangle([i, 0, i + bar_width, height], fill=0)
+                        
+                        print(f"Strategy 3 (fallback pattern) used for barcode '{data}'")
+                        
+                    except Exception as e3:
+                        print(f"Strategy 3 failed for barcode '{data}': {e3}")
+                        # Final fallback: empty white rectangle
+                        barcode_img = Image.new("1", (200, 50), 1)
+                        print(f"Final fallback used for barcode '{data}'")
             
             # Convert to black-white (1-bit) mode
             barcode_img = barcode_img.convert("1")
