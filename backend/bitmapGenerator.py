@@ -29,6 +29,7 @@ class BitmapGenerator:
             font_paths = {
                 'arial': os.path.join(windows_fonts, 'arial.ttf'),
                 'arial bold': os.path.join(windows_fonts, 'arialbd.ttf'),
+                'arial narrow': os.path.join(windows_fonts, 'ARIALN.TTF'),
                 'times': os.path.join(windows_fonts, 'times.ttf'),
                 'times new roman': os.path.join(windows_fonts, 'times.ttf'),
                 'courier': os.path.join(windows_fonts, 'cour.ttf'),
