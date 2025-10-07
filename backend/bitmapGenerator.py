@@ -389,6 +389,8 @@ class BitmapGenerator:
         # Process icon items
         for icon_item in icon_items:
             if icon_item.get("iconFile"):
+                print(f"Processing icon item: x={icon_item.get('x', 0)}, y={icon_item.get('y', 0)}, "
+                      f"width={icon_item.get('width', 0)}, height={icon_item.get('height', 0)}")
                 # If no width/height specified, keep original dimensions
                 width = icon_item.get("width")
                 height = icon_item.get("height")
@@ -400,10 +402,15 @@ class BitmapGenerator:
                     width,
                     height
                 )
+            else:
+                print("Icon item has no iconFile data")
         
         # Process barcode items
         for barcode_item in barcode_items:
             if barcode_item.get("data"):
+                print(f"Processing barcode item: data='{barcode_item.get('data', '')}', "
+                      f"format={barcode_item.get('format', 'code128')}, "
+                      f"x={barcode_item.get('x', 0)}, y={barcode_item.get('y', 0)}")
                 self.set_barcode(
                     barcode_item["data"],
                     barcode_item.get("x", 0),
@@ -412,6 +419,8 @@ class BitmapGenerator:
                     barcode_item.get("width", None),
                     barcode_item.get("height", None)
                 )
+            else:
+                print("Barcode item has no data")
         
         self.bitmap_finish()
 

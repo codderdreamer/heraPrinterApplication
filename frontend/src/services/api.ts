@@ -103,6 +103,37 @@ class ApiService {
     iconItems: any[];
     barcodeItems: any[];
   }): Promise<Blob> {
+    // Debug logging
+    console.log('Sending bitmap settings:', {
+      ip,
+      name,
+      textItemsCount: settings.textItems?.length || 0,
+      iconItemsCount: settings.iconItems?.length || 0,
+      barcodeItemsCount: settings.barcodeItems?.length || 0
+    });
+    
+    // Log icon items details
+    settings.iconItems?.forEach((iconItem, index) => {
+      const iconFileSize = iconItem.iconFile ? iconItem.iconFile.length : 0;
+      console.log(`Icon item ${index}:`, {
+        x: iconItem.x,
+        y: iconItem.y,
+        width: iconItem.width,
+        height: iconItem.height,
+        iconFileSize: iconFileSize
+      });
+    });
+    
+    // Log barcode items details
+    settings.barcodeItems?.forEach((barcodeItem, index) => {
+      console.log(`Barcode item ${index}:`, {
+        x: barcodeItem.x,
+        y: barcodeItem.y,
+        data: barcodeItem.data,
+        format: barcodeItem.format
+      });
+    });
+
     const response = await fetch(`${API_BASE_URL}/bitmap-settings`, {
       method: 'POST',
       headers: {

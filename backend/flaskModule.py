@@ -311,6 +311,25 @@ class FlaskModule:
                 icon_items = data.get('iconItems', [])
                 barcode_items = data.get('barcodeItems', [])
                 
+                # Debug logging
+                print(f"Saving bitmap settings for {ip} with name: {name}")
+                print(f"Text items count: {len(text_items)}")
+                print(f"Value items count: {len(value_items)}")
+                print(f"Icon items count: {len(icon_items)}")
+                print(f"Barcode items count: {len(barcode_items)}")
+                
+                # Log icon items details
+                for i, icon_item in enumerate(icon_items):
+                    icon_file_size = len(icon_item.get('iconFile', '')) if icon_item.get('iconFile') else 0
+                    print(f"Icon item {i}: x={icon_item.get('x', 0)}, y={icon_item.get('y', 0)}, "
+                          f"width={icon_item.get('width', 0)}, height={icon_item.get('height', 0)}, "
+                          f"iconFile size={icon_file_size} chars")
+                
+                # Log barcode items details
+                for i, barcode_item in enumerate(barcode_items):
+                    print(f"Barcode item {i}: x={barcode_item.get('x', 0)}, y={barcode_item.get('y', 0)}, "
+                          f"data='{barcode_item.get('data', '')}', format={barcode_item.get('format', '')}")
+                
                 # Create settings data structure
                 settings_data = {
                     "textItems": text_items,
@@ -318,10 +337,6 @@ class FlaskModule:
                     "iconItems": icon_items,
                     "barcodeItems": barcode_items
                 }
-                
-                # Save to database
-                print(f"Saving bitmap settings for {ip} with name: {name}")
-                print(f"Settings data: {settings_data}")
                 success = self.application.printers.save_bitmap_settings(
                     ip, name, json.dumps(settings_data)
                 )
