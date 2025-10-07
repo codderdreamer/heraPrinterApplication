@@ -513,6 +513,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   >
                     <option value="Arial">Arial</option>
                     <option value="Arial Bold">Arial Bold</option>
+                    <option value="Arial Narrow">Arial Narrow</option>
                     <option value="Times New Roman">Times New Roman</option>
                     <option value="Calibri">Calibri</option>
                     <option value="Tahoma">Tahoma</option>
@@ -605,6 +606,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   >
                     <option value="Arial">Arial</option>
                     <option value="Arial Bold">Arial Bold</option>
+                    <option value="Arial Narrow">Arial Narrow</option>
                     <option value="Times New Roman">Times New Roman</option>
                     <option value="Calibri">Calibri</option>
                     <option value="Tahoma">Tahoma</option>
@@ -807,6 +809,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   >
                     <option value="Arial">Arial</option>
                     <option value="Arial Bold">Arial Bold</option>
+                    <option value="Arial Narrow">Arial Narrow</option>
                     <option value="Times New Roman">Times New Roman</option>
                     <option value="Calibri">Calibri</option>
                     <option value="Tahoma">Tahoma</option>
