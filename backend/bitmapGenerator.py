@@ -5,6 +5,7 @@ from io import BytesIO
 import json
 import os
 import platform
+import base64
 from pathlib import Path
 from typing import List, Dict, Any
 
@@ -266,6 +267,53 @@ class BitmapGenerator:
             print(f"Error loading image: {e}")
             return (x, y, x, y)  # Return empty bbox
 
+    def set_icon_from_base64(self, base64_data: str, x: int, y: int, width_px: int = None, height_px: int = None):
+        """Add icon from base64 data to bitmap at specified coordinates"""
+        try:
+            # Remove data URL prefix if present (e.g., "data:image/png;base64,")
+            if base64_data.startswith('data:'):
+                base64_data = base64_data.split(',')[1]
+            
+            # Decode base64 data
+            image_data = base64.b64decode(base64_data)
+            
+            # Create image from bytes
+            img = Image.open(BytesIO(image_data))
+            
+            # Convert to black-white (1-bit) mode
+            img = img.convert("1")
+            
+            # Resize
+            if width_px or height_px:
+                current_width, current_height = img.size
+                
+                if width_px and height_px:
+                    # Both dimensions given - direct resize
+                    img = img.resize((width_px, height_px))
+                elif width_px:
+                    # Only width given - proportional resize
+                    ratio = width_px / current_width
+                    new_height = int(current_height * ratio)
+                    img = img.resize((width_px, new_height))
+                elif height_px:
+                    # Only height given - proportional resize
+                    ratio = height_px / current_height
+                    new_width = int(current_width * ratio)
+                    img = img.resize((new_width, height_px))
+            
+            # Paste to main image
+            self.img.paste(img, (x, y))
+            
+            # Calculate bounding box
+            bbox = (x, y, x + img.width, y + img.height)
+            print(f"Icon from base64 bbox: {bbox}")
+            
+            return bbox
+            
+        except Exception as e:
+            print(f"Error loading icon from base64: {e}")
+            return (x, y, x, y)  # Return empty bbox
+
     def bitmap_init(self):
         """Initialize bitmap with label dimensions"""
         # Calculate label dimensions
@@ -341,9 +389,13 @@ class BitmapGenerator:
         # Process icon items
         for icon_item in icon_items:
             if icon_item.get("iconFile"):
-                # For base64 data, we need to handle it differently
-                # For now, skip icon items as they need special handling
-                pass
+                self.set_icon_from_base64(
+                    icon_item["iconFile"],
+                    icon_item.get("x", 0),
+                    icon_item.get("y", 0),
+                    icon_item.get("width", 24),
+                    icon_item.get("height", 24)
+                )
         
         # Process barcode items
         for barcode_item in barcode_items:
