@@ -3,6 +3,7 @@ from flask_cors import CORS
 from threading import Thread
 import os
 import json
+import sys
 from backend.tscPrinterModule import printer_manager
 from backend.bitmapGenerator import BitmapGenerator
 
@@ -247,21 +248,15 @@ class FlaskModule:
                 
                 # Check if the corresponding bitmap file exists
                 bitmap_filename = f"bitmap_{printer_ip}_{settings_name}.bmp"
-                # Try multiple possible paths for bitmap files
-                possible_paths = [
-                    os.path.join(os.path.dirname(os.path.dirname(__file__)), bitmap_filename),  # Project root
-                    os.path.join(os.path.dirname(__file__), bitmap_filename),  # Backend folder
-                    bitmap_filename  # Current directory
-                ]
                 
-                bitmap_path = None
-                for path in possible_paths:
-                    if os.path.exists(path):
-                        bitmap_path = path
-                        break
-                
-                if not bitmap_path:
-                    bitmap_path = possible_paths[0]  # Default to project root
+                # Get the correct path for bitmap files when running as exe
+                if getattr(sys, 'frozen', False):
+                    # Running as compiled exe - bitmap files are in the same directory as exe
+                    base_path = os.path.dirname(sys.executable)
+                    bitmap_path = os.path.join(base_path, bitmap_filename)
+                else:
+                    # Running as script - bitmap files are in project root
+                    bitmap_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), bitmap_filename)
                 
                 if os.path.exists(bitmap_path):
                     return send_file(bitmap_path, mimetype='image/bmp')
