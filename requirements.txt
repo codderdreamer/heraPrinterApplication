@@ -3,3 +3,4 @@ Flask==3.0.0
 flask-cors==4.0.0
 Pillow==10.1.0
 python-barcode==0.15.1
+pyinstaller==6.16.0

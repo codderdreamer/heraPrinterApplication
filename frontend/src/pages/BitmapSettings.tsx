@@ -334,8 +334,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       id: nextIconId,
       x: 0,
       y: 0,
-      width: 24,
-      height: 24,
+      width: 0,  // 0 means keep original size
+      height: 0, // 0 means keep original size
       iconFile: ''
     };
     setIconItems(prev => [...prev, newIcon]);
@@ -682,9 +682,13 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     type="number"
                     value={iconItem.width}
                     onChange={(e) => updateIconItem(iconItem.id, 'width', parseInt(e.target.value))}
-                    min="1"
-                    max="200"
+                    min="0"
+                    max="500"
+                    placeholder="0 = Orijinal boyut"
                   />
+                  <small style={{color: '#666', fontSize: '0.8rem'}}>
+                    0 = Orijinal boyutu koru, diğer değerler pixel cinsinden
+                  </small>
                 </div>
                 <div className="form-group">
                   <label>Yükseklik:</label>
@@ -692,9 +696,13 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     type="number"
                     value={iconItem.height}
                     onChange={(e) => updateIconItem(iconItem.id, 'height', parseInt(e.target.value))}
-                    min="1"
-                    max="200"
+                    min="0"
+                    max="500"
+                    placeholder="0 = Orijinal boyut"
                   />
+                  <small style={{color: '#666', fontSize: '0.8rem'}}>
+                    0 = Orijinal boyutu koru, diğer değerler pixel cinsinden
+                  </small>
                 </div>
               </div>
             ))}

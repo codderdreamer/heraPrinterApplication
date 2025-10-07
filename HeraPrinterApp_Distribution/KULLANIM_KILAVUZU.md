@@ -64,3 +64,7 @@ Herhangi bir sorun yaşadığınızda, lütfen aşağıdaki bilgileri toplayın:
 - Sürüm: 1.0
 - Tarih: Ekim 2025
 - Geliştirici: Hera Printer Application Team
+
+## Exe Oluşturma
+pyinstaller heraPrinterApp.spec
+py dist\HeraPrinterApp.exe HeraPrinterApp_Distribution\

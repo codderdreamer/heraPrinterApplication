@@ -283,19 +283,19 @@ class BitmapGenerator:
             # Convert to black-white (1-bit) mode
             img = img.convert("1")
             
-            # Resize
-            if width_px or height_px:
+            # Resize only if valid dimensions are provided
+            if (width_px and width_px > 0) or (height_px and height_px > 0):
                 current_width, current_height = img.size
                 
-                if width_px and height_px:
+                if width_px and height_px and width_px > 0 and height_px > 0:
                     # Both dimensions given - direct resize
                     img = img.resize((width_px, height_px))
-                elif width_px:
+                elif width_px and width_px > 0:
                     # Only width given - proportional resize
                     ratio = width_px / current_width
                     new_height = int(current_height * ratio)
                     img = img.resize((width_px, new_height))
-                elif height_px:
+                elif height_px and height_px > 0:
                     # Only height given - proportional resize
                     ratio = height_px / current_height
                     new_width = int(current_width * ratio)
@@ -389,12 +389,16 @@ class BitmapGenerator:
         # Process icon items
         for icon_item in icon_items:
             if icon_item.get("iconFile"):
+                # If no width/height specified, keep original dimensions
+                width = icon_item.get("width")
+                height = icon_item.get("height")
+                
                 self.set_icon_from_base64(
                     icon_item["iconFile"],
                     icon_item.get("x", 0),
                     icon_item.get("y", 0),
-                    icon_item.get("width", 24),
-                    icon_item.get("height", 24)
+                    width,
+                    height
                 )
         
         # Process barcode items

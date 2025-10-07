@@ -173,9 +173,10 @@ frontend/build/
 frontend/dist/
 
 # Database files
-# *.db
+*.db
 *.sqlite
 *.sqlite3
+database/
 
 # Log files
 logs/
@@ -209,6 +210,14 @@ Thumbs.db
 # Project specific
 # TSCLIB.dll - Windows DLL dosyası (genellikle git'e eklenmez)
 # TSCLIB.dll
+
+# Generated bitmap files
+*.bmp
+bitmap_*.bmp
+generated_bitmap.bmp
+
+# Distribution folder
+HeraPrinterApp_Distribution/
 
 # Configuration files with sensitive data
 config.ini
