@@ -14,6 +14,7 @@ interface TextItem {
   y: number;
   fontSize: number;
   fontFamily: string;
+  rotation: number; // 0, 90, 180, 270 derece
 }
 
 interface ValueItem {
@@ -24,6 +25,7 @@ interface ValueItem {
   y: number;
   fontSize: number;
   fontFamily: string;
+  rotation: number; // 0, 90, 180, 270 derece
   type: 'text' | 'image';  // Value tipi: text veya image
   imageFile?: string;  // Base64 encoded image data
   imageWidth?: number;  // Image genişliği
@@ -275,7 +277,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       x: 0,
       y: 0,
       fontSize: 12,
-      fontFamily: 'Arial'
+      fontFamily: 'Arial',
+      rotation: 0
     };
     console.log('Adding new text:', newText);
     setTextItems(prev => {
@@ -310,6 +313,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       y: 0,
       fontSize: 12,
       fontFamily: 'Arial',
+      rotation: 0,  // Default 0° (Normal)
       type: 'text'  // Default olarak text
     };
     console.log('Adding new value:', newValue);
@@ -559,6 +563,17 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     <option value="Helvetica">Helvetica</option>
                   </select>
                 </div>
+                <div className="form-group">
+                  <label>Döndürme:</label>
+                  <select
+                    value={textItem.rotation}
+                    onChange={(e) => updateTextItem(textItem.id, 'rotation', parseInt(e.target.value))}
+                  >
+                    <option value="0">0° (Normal)</option>
+                    <option value="90">90° (Saat Yönü)</option>
+                    <option value="270">270° (Saat Yönü Ters)</option>
+                  </select>
+                </div>
               </div>
             ))}
             </div>
@@ -726,6 +741,17 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                         <option value="Georgia">Georgia</option>
                         <option value="Trebuchet MS">Trebuchet MS</option>
                         <option value="Helvetica">Helvetica</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>Döndürme:</label>
+                      <select
+                        value={valueItem.rotation}
+                        onChange={(e) => updateValueItem(valueItem.id, 'rotation', parseInt(e.target.value))}
+                      >
+                        <option value="0">0° (Normal)</option>
+                        <option value="90">90° (Saat Yönü)</option>
+                        <option value="270">270° (Saat Yönü Ters)</option>
                       </select>
                     </div>
                   </>

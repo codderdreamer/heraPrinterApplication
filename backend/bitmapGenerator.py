@@ -185,13 +185,45 @@ class BitmapGenerator:
             print(f"Error setting label scale: {e}")
             return (0, 0, 0)
 
-    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_family: str = "Arial"):
-        """Add text to bitmap at specified coordinates"""
+    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_family: str = "Arial", rotation: int = 0):
+        """Add text to bitmap at specified coordinates with rotation"""
         try:
             font = self._load_font(font_family, font_size_px)
-            self.draw.text((x, y), text, font=font, fill=0)
-            bbox = self.draw.textbbox((x, y), text, font=font)
-            print(f"Text '{text}' bbox: {bbox}")
+            
+            if rotation == 0:
+                # Normal text (no rotation)
+                self.draw.text((x, y), text, font=font, fill=(0, 0, 0))  # Black text
+                bbox = self.draw.textbbox((x, y), text, font=font)
+            else:
+                # Get text bounding box to calculate center
+                bbox = self.draw.textbbox((x, y), text, font=font)
+                text_width = bbox[2] - bbox[0]
+                text_height = bbox[3] - bbox[1]
+                
+                # Create a temporary image just for the text
+                temp_img = Image.new("RGB", (text_width + 20, text_height + 20), (255, 255, 255))  # White background
+                temp_draw = ImageDraw.Draw(temp_img)
+                
+                # Draw text on temporary image (centered)
+                temp_x = (temp_img.width - text_width) // 2
+                temp_y = (temp_img.height - text_height) // 2
+                temp_draw.text((temp_x, temp_y), text, font=font, fill=(0, 0, 0))  # Black text
+                
+                # Rotate the temporary image around its center
+                rotated_img = temp_img.rotate(rotation, expand=False, fillcolor=(255, 255, 255))
+                
+                # Calculate the position to paste the rotated text
+                # So that the center of the rotated text is at (x, y)
+                paste_x = x - rotated_img.width // 2
+                paste_y = y - rotated_img.height // 2
+                
+                # Paste the rotated text onto the main image
+                self.img.paste(rotated_img, (paste_x, paste_y))
+                
+                # Update bounding box for rotated text
+                bbox = (paste_x, paste_y, paste_x + rotated_img.width, paste_y + rotated_img.height)
+            
+            print(f"Text '{text}' with rotation {rotation}° at ({x}, {y}) bbox: {bbox}")
             return bbox
         except Exception as e:
             print(f"Error setting text: {e}")
@@ -395,8 +427,8 @@ class BitmapGenerator:
             # Calculate label dimensions
             W, H, dpmm = self.set_label_scale()
             
-            # Create Image and Draw objects
-            self.img = Image.new("1", (W, H), 1)  # 1=mode (1-bit), 1=white
+            # Create Image and Draw objects - RGB format for better text visibility
+            self.img = Image.new("RGB", (W, H), (255, 255, 255))  # RGB, white background
             self.draw = ImageDraw.Draw(self.img)
         except Exception as e:
             print(f"Error initializing bitmap: {e}")
@@ -404,7 +436,14 @@ class BitmapGenerator:
     def bitmap_finish(self):
         """Save bitmap to file"""
         try:
+            # Convert RGB to 1-bit for printer compatibility
+            if self.img.mode != "1":
+                # Convert to grayscale first, then to 1-bit
+                gray_img = self.img.convert("L")
+                self.img = gray_img.convert("1")
+            
             self.img.save(self.filename, format="BMP")
+            print(f"Bitmap saved as {self.filename}")
         except Exception as e:
             print(f"Error saving bitmap: {e}")
 
@@ -457,7 +496,8 @@ class BitmapGenerator:
                         text_item.get("x", 0),
                         text_item.get("y", 0),
                         text_item.get("fontSize", 12),
-                        text_item.get("fontFamily", "Arial")
+                        text_item.get("fontFamily", "Arial"),
+                        text_item.get("rotation", 0)
                     )
             
             # Process value items
@@ -470,7 +510,8 @@ class BitmapGenerator:
                         value_item.get("x", 0),
                         value_item.get("y", 0),
                         value_item.get("fontSize", 12),
-                        value_item.get("fontFamily", "Arial")
+                        value_item.get("fontFamily", "Arial"),
+                        value_item.get("rotation", 0)
                     )
                 elif value_type == "image" and value_item.get("imageFile"):
                     print(f"Processing value image item: x={value_item.get('x', 0)}, y={value_item.get('y', 0)}, "
