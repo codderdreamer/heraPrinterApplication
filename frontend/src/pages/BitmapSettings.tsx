@@ -462,17 +462,20 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       <div className="settings-content">
         <div className="settings-panel">
           <div className="section-selector">
-            <label>Bölüm Seçin:</label>
-            <select 
-              value={activeSection} 
-              onChange={(e) => setActiveSection(e.target.value as 'text' | 'value' | 'icon' | 'barcode')}
-              className="section-select"
-            >
-              <option value="text">Text Bilgileri</option>
-              <option value="value">Value Bilgileri</option>
-              <option value="icon">İkon Bilgileri</option>
-              <option value="barcode">Barkod Bilgileri</option>
-            </select>
+            <label>📋 Bölüm Seçin:</label>
+            <div className="select-wrapper">
+              <select 
+                value={activeSection} 
+                onChange={(e) => setActiveSection(e.target.value as 'text' | 'value' | 'icon' | 'barcode')}
+                className="section-select"
+              >
+                <option value="text">📝 Text Bilgileri</option>
+                <option value="value">🏷️ Value Bilgileri</option>
+                <option value="icon">🖼️ İkon Bilgileri</option>
+                <option value="barcode">📊 Barkod Bilgileri</option>
+              </select>
+              <div className="select-arrow">▼</div>
+            </div>
           </div>
 
           {activeSection === 'text' && (

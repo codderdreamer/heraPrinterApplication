@@ -11,10 +11,33 @@
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #40455d, #000000);
   min-height: 100vh;
   color: #333;
   line-height: 1.6;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #2c3e50;
+}
+
+/* Global Scrollbar Styles */
+*::-webkit-scrollbar {
+  width: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: rgba(44, 62, 80, 0.3);
+  border-radius: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 2px solid rgba(44, 62, 80, 0.3);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 /* Typography */

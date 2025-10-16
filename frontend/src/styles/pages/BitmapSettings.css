@@ -112,48 +112,131 @@
   flex-direction: column;
   gap: 1.5rem;
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: visible;
   max-height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #2c3e50;
+}
+
+.settings-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.settings-panel::-webkit-scrollbar-track {
+  background: rgba(44, 62, 80, 0.3);
+  border-radius: 10px;
+}
+
+.settings-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 2px solid rgba(44, 62, 80, 0.3);
+}
+
+.settings-panel::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .section-selector {
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 12px;
-  padding: 1rem;
+  background: linear-gradient(135deg, #53586c, #060f2569);
+    border: 2px solid #0e0e09;
+  border-radius: 16px;
+  padding: 1.5rem;
   margin-bottom: 1.5rem;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 32px rgba(102, 126, 234, 0.5);
+  position: relative;
+  z-index: 1000;
+}
+
+.section-selector::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  pointer-events: none;
 }
 
 .section-selector label {
   color: white;
-  font-weight: 500;
-  margin-bottom: 0.5rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
   display: block;
+  font-size: 1.1rem;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  position: relative;
+  z-index: 1;
+}
+
+.select-wrapper {
+  position: relative;
+  z-index: 1001;
 }
 
 .section-select {
   width: 100%;
-  padding: 0.75rem;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.3);
-  border-radius: 8px;
+  padding: 1rem;
+  background: #2c3e50;
+  border: 2px solid #0e0e09;
+  border-radius: 12px;
   color: white;
   font-size: 1rem;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 1002;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.select-arrow {
+  position: absolute;
+  right: 1rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: white;
+  font-size: 0.8rem;
+  pointer-events: none;
+  transition: all 0.3s ease;
+  z-index: 1003;
+}
+
+.section-select:hover {
+  background: #34495e;
+  border-color: #f39c12;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.section-select:hover + .select-arrow {
+  color: #ffd700;
+  transform: translateY(-50%) scale(1.1);
 }
 
 .section-select:focus {
   outline: none;
-  border-color: #4CAF50;
-  box-shadow: 0 0 0 2px rgba(76, 175, 80, 0.2);
+  border-color: #ffd700;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3), 0 6px 20px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+
+.section-select:focus + .select-arrow {
+  color: #ffd700;
+  transform: translateY(-50%) scale(1.2);
 }
 
 .section-select option {
-  background: #2a2a2a;
+  background: linear-gradient(135deg, #2c3e50, #34495e);
   color: white;
+  padding: 0.5rem;
+  font-weight: 500;
+}
+
+.section-select option:hover {
+  background: linear-gradient(135deg, #3498db, #2980b9);
 }
 
 .settings-section {
@@ -226,6 +309,28 @@
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #2c3e50;
+}
+
+.preview-panel::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-panel::-webkit-scrollbar-track {
+  background: rgba(44, 62, 80, 0.3);
+  border-radius: 10px;
+}
+
+.preview-panel::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 2px solid rgba(44, 62, 80, 0.3);
+}
+
+.preview-panel::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .preview-panel h3 {
@@ -247,6 +352,28 @@
   overflow-y: auto;
   width: 100%;
   height: 100%;
+  scrollbar-width: thin;
+  scrollbar-color: #667eea #2c3e50;
+}
+
+.preview-container::-webkit-scrollbar {
+  width: 8px;
+}
+
+.preview-container::-webkit-scrollbar-track {
+  background: rgba(44, 62, 80, 0.3);
+  border-radius: 10px;
+}
+
+.preview-container::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 10px;
+  border: 2px solid rgba(44, 62, 80, 0.3);
+}
+
+.preview-container::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #764ba2, #667eea);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .preview-container .bitmap-preview {
