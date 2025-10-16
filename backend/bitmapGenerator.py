@@ -251,7 +251,7 @@ class BitmapGenerator:
             # Strategy 1: Try with custom writer settings
             try:
                 writer = ImageWriter()
-                writer.write_text = False
+                #writer.write_text = False
                 writer.module_width = 0.2
                 writer.module_height = 10.0
                 
@@ -273,7 +273,7 @@ class BitmapGenerator:
                 # Strategy 2: Try with minimal settings
                 try:
                     writer2 = ImageWriter()
-                    writer2.write_text = False
+                    #writer2.write_text = False
                     writer2.module_width = 0.2
                     writer2.module_height = 10.0
                     
