@@ -252,7 +252,6 @@ class BitmapGenerator:
             try:
                 writer = ImageWriter()
                 writer.write_text = False
-                writer.font_path = None  # Explicitly disable font loading
                 writer.module_width = 0.2
                 writer.module_height = 10.0
                 
