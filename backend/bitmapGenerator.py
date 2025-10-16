@@ -460,15 +460,28 @@ class BitmapGenerator:
                         text_item.get("fontFamily", "Arial")
                     )
             
-            # Process value items (same as text items)
+            # Process value items
             for value_item in value_items:
-                if value_item.get("content"):
+                value_type = value_item.get("type", "text")
+                
+                if value_type == "text" and value_item.get("content"):
                     self.set_text(
                         value_item["content"],
                         value_item.get("x", 0),
                         value_item.get("y", 0),
                         value_item.get("fontSize", 12),
                         value_item.get("fontFamily", "Arial")
+                    )
+                elif value_type == "image" and value_item.get("imageFile"):
+                    print(f"Processing value image item: x={value_item.get('x', 0)}, y={value_item.get('y', 0)}, "
+                          f"width={value_item.get('imageWidth', 0)}, height={value_item.get('imageHeight', 0)}")
+                    
+                    self.set_icon_from_base64(
+                        value_item["imageFile"],
+                        value_item.get("x", 0),
+                        value_item.get("y", 0),
+                        value_item.get("imageWidth", 0),
+                        value_item.get("imageHeight", 0)
                     )
             
             # Process icon items

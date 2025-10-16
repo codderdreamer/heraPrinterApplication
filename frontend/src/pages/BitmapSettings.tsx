@@ -24,6 +24,10 @@ interface ValueItem {
   y: number;
   fontSize: number;
   fontFamily: string;
+  type: 'text' | 'image';  // Value tipi: text veya image
+  imageFile?: string;  // Base64 encoded image data
+  imageWidth?: number;  // Image genişliği
+  imageHeight?: number; // Image yüksekliği
 }
 
 interface IconItem {
@@ -61,6 +65,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
   const [barcodeItems, setBarcodeItems] = useState<BarcodeItem[]>([]);
   const [nextBarcodeId, setNextBarcodeId] = useState(1);
+
+  const [activeSection, setActiveSection] = useState<'text' | 'value' | 'icon' | 'barcode'>('text');
 
   const [saveStatus, setSaveStatus] = useState<string>('');
   const [logoUrl, setLogoUrl] = useState<string>('');
@@ -303,7 +309,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       x: 0,
       y: 0,
       fontSize: 12,
-      fontFamily: 'Arial'
+      fontFamily: 'Arial',
+      type: 'text'  // Default olarak text
     };
     console.log('Adding new value:', newValue);
     setValueItems(prev => {
@@ -323,6 +330,16 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       console.log('Updated valueItems after update:', updated);
       return updated;
     });
+  };
+
+  const handleValueImageUpload = (id: number, file: File) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      updateValueItem(id, 'imageFile', result);
+      updateValueItem(id, 'type', 'image');
+    };
+    reader.readAsDataURL(file);
   };
 
   const deleteValueItem = (id: number) => {
@@ -444,7 +461,22 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
       <div className="settings-content">
         <div className="settings-panel">
-          <div className="settings-section">
+          <div className="section-selector">
+            <label>Bölüm Seçin:</label>
+            <select 
+              value={activeSection} 
+              onChange={(e) => setActiveSection(e.target.value as 'text' | 'value' | 'icon' | 'barcode')}
+              className="section-select"
+            >
+              <option value="text">Text Bilgileri</option>
+              <option value="value">Value Bilgileri</option>
+              <option value="icon">İkon Bilgileri</option>
+              <option value="barcode">Barkod Bilgileri</option>
+            </select>
+          </div>
+
+          {activeSection === 'text' && (
+            <div className="settings-section">
             <h3>Text Bilgileri</h3>
             
             <button 
@@ -526,10 +558,12 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
-          <div className="settings-section">
-            <h3>Value Bilgileri</h3>
+          {activeSection === 'value' && (
+            <div className="settings-section">
+              <h3>Value Bilgileri</h3>
             
             <button 
               className="btn btn-secondary add-text-btn"
@@ -559,15 +593,86 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     placeholder="Value ID girin (örn: PRODUCT_NAME)"
                   />
                 </div>
+                
                 <div className="form-group">
-                  <label>Value:</label>
-                  <input
-                    type="text"
-                    value={valueItem.content}
-                    onChange={(e) => updateValueItem(valueItem.id, 'content', e.target.value)}
-                    placeholder="Yazılacak value..."
-                  />
+                  <label>Value Tipi:</label>
+                  <select
+                    value={valueItem.type}
+                    onChange={(e) => updateValueItem(valueItem.id, 'type', e.target.value as 'text' | 'image')}
+                  >
+                    <option value="text">Text</option>
+                    <option value="image">Image</option>
+                  </select>
                 </div>
+
+                {valueItem.type === 'text' ? (
+                  <div className="form-group">
+                    <label>Value:</label>
+                    <input
+                      type="text"
+                      value={valueItem.content}
+                      onChange={(e) => updateValueItem(valueItem.id, 'content', e.target.value)}
+                      placeholder="Yazılacak value..."
+                    />
+                  </div>
+                ) : (
+                  <div className="form-group">
+                    <label>Image:</label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleValueImageUpload(valueItem.id, file);
+                        }
+                      }}
+                    />
+                    {valueItem.imageFile && (
+                      <div className="image-preview">
+                        <img 
+                          src={valueItem.imageFile} 
+                          alt="Value preview" 
+                          style={{maxWidth: '100px', maxHeight: '100px', marginTop: '10px'}}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {valueItem.type === 'image' && (
+                  <>
+                    <div className="form-group">
+                      <label>Image Genişliği:</label>
+                      <input
+                        type="number"
+                        value={valueItem.imageWidth || 0}
+                        onChange={(e) => updateValueItem(valueItem.id, 'imageWidth', parseInt(e.target.value))}
+                        min="0"
+                        max="500"
+                        placeholder="0 = Orijinal boyut"
+                      />
+                      <small style={{color: '#666', fontSize: '0.8rem'}}>
+                        0 = Orijinal boyutu koru, diğer değerler pixel cinsinden
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label>Image Yüksekliği:</label>
+                      <input
+                        type="number"
+                        value={valueItem.imageHeight || 0}
+                        onChange={(e) => updateValueItem(valueItem.id, 'imageHeight', parseInt(e.target.value))}
+                        min="0"
+                        max="500"
+                        placeholder="0 = Orijinal boyut"
+                      />
+                      <small style={{color: '#666', fontSize: '0.8rem'}}>
+                        0 = Orijinal boyutu koru, diğer değerler pixel cinsinden
+                      </small>
+                    </div>
+                  </>
+                )}
+
                 <div className="form-group">
                   <label>X Koordinatı:</label>
                   <input
@@ -588,41 +693,48 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     placeholder="0"
                   />
                 </div>
-                <div className="form-group">
-                  <label>Font Boyutu:</label>
-                  <input
-                    type="number"
-                    value={valueItem.fontSize}
-                    onChange={(e) => updateValueItem(valueItem.id, 'fontSize', parseInt(e.target.value))}
-                    min="8"
-                    max="72"
-                  />
-                </div>
-                <div className="form-group">
-                  <label>Font Ailesi:</label>
-                  <select
-                    value={valueItem.fontFamily}
-                    onChange={(e) => updateValueItem(valueItem.id, 'fontFamily', e.target.value)}
-                  >
-                    <option value="Arial">Arial</option>
-                    <option value="Arial Bold">Arial Bold</option>
-                    <option value="Arial Narrow">Arial Narrow</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                    <option value="Calibri">Calibri</option>
-                    <option value="Tahoma">Tahoma</option>
-                    <option value="Verdana">Verdana</option>
-                    <option value="Courier New">Courier New</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Trebuchet MS">Trebuchet MS</option>
-                    <option value="Helvetica">Helvetica</option>
-                  </select>
-                </div>
+
+                {valueItem.type === 'text' && (
+                  <>
+                    <div className="form-group">
+                      <label>Font Boyutu:</label>
+                      <input
+                        type="number"
+                        value={valueItem.fontSize}
+                        onChange={(e) => updateValueItem(valueItem.id, 'fontSize', parseInt(e.target.value))}
+                        min="8"
+                        max="72"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label>Font Ailesi:</label>
+                      <select
+                        value={valueItem.fontFamily}
+                        onChange={(e) => updateValueItem(valueItem.id, 'fontFamily', e.target.value)}
+                      >
+                        <option value="Arial">Arial</option>
+                        <option value="Arial Bold">Arial Bold</option>
+                        <option value="Arial Narrow">Arial Narrow</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Calibri">Calibri</option>
+                        <option value="Tahoma">Tahoma</option>
+                        <option value="Verdana">Verdana</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Trebuchet MS">Trebuchet MS</option>
+                        <option value="Helvetica">Helvetica</option>
+                      </select>
+                    </div>
+                  </>
+                )}
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
-          <div className="settings-section">
-            <h3>İkon Bilgileri</h3>
+          {activeSection === 'icon' && (
+            <div className="settings-section">
+              <h3>İkon Bilgileri</h3>
             
             <button 
               className="btn btn-secondary add-text-btn"
@@ -706,10 +818,12 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
 
-          <div className="settings-section">
-            <h3>Barkod Bilgileri</h3>
+          {activeSection === 'barcode' && (
+            <div className="settings-section">
+              <h3>Barkod Bilgileri</h3>
             
             <button 
               className="btn btn-secondary add-text-btn"
@@ -843,7 +957,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                 </div>
               </div>
             ))}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="preview-panel">
