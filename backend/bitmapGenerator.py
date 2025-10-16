@@ -251,7 +251,8 @@ class BitmapGenerator:
             # Strategy 1: Try with custom writer settings
             try:
                 writer = ImageWriter()
-                #writer.write_text = False
+                writer.write_text = False
+                writer.font_path = None
                 writer.module_width = 0.2
                 writer.module_height = 10.0
                 
@@ -273,7 +274,8 @@ class BitmapGenerator:
                 # Strategy 2: Try with minimal settings
                 try:
                     writer2 = ImageWriter()
-                    #writer2.write_text = False
+                    writer2.write_text = False
+                    writer2.font_path = ""
                     writer2.module_width = 0.2
                     writer2.module_height = 10.0
                     
@@ -287,21 +289,39 @@ class BitmapGenerator:
                 except Exception as e2:
                     print(f"Strategy 2 failed for barcode '{data}': {e2}")
                     
-                    # Strategy 3: Create fallback barcode
+                    # Strategy 3: Try with environment variable manipulation
                     try:
-                        # Create a simple rectangular barcode pattern
-                        width = width_px if width_px else 200
-                        height = height_px if height_px else 50
-                        barcode_img = Image.new("1", (width, height), 1)  # White background
+                        import os
+                        # Save original font environment
+                        original_font_path = os.environ.get('FONTCONFIG_PATH', '')
+                        original_font_file = os.environ.get('FONTCONFIG_FILE', '')
                         
-                        # Draw simple barcode pattern
-                        draw = ImageDraw.Draw(barcode_img)
-                        bar_width = 2
-                        for i in range(0, width, bar_width * 2):
-                            if i + bar_width < width:
-                                draw.rectangle([i, 0, i + bar_width, height], fill=0)
+                        # Remove font environment variables completely
+                        if 'FONTCONFIG_PATH' in os.environ:
+                            del os.environ['FONTCONFIG_PATH']
+                        if 'FONTCONFIG_FILE' in os.environ:
+                            del os.environ['FONTCONFIG_FILE']
+                        if 'FONT_DIR' in os.environ:
+                            del os.environ['FONT_DIR']
                         
-                        print(f"Strategy 3 (fallback pattern) used for barcode '{data}'")
+                        writer3 = ImageWriter()
+                        writer3.write_text = False
+                        writer3.module_width = 0.2
+                        writer3.module_height = 10.0
+                        
+                        barcode = barcode_class(data, writer=writer3)
+                        buffer = BytesIO()
+                        barcode.write(buffer)
+                        buffer.seek(0)
+                        barcode_img = Image.open(buffer)
+                        
+                        # Restore original font environment
+                        if original_font_path:
+                            os.environ['FONTCONFIG_PATH'] = original_font_path
+                        if original_font_file:
+                            os.environ['FONTCONFIG_FILE'] = original_font_file
+                        
+                        print(f"Strategy 3 successful for barcode '{data}'")
                         
                     except Exception as e3:
                         print(f"Strategy 3 failed for barcode '{data}': {e3}")
