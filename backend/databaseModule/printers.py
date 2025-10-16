@@ -112,8 +112,7 @@ class Printers(DatabaseModule):
         else:
             query = "SELECT * FROM bitmap_settings WHERE printer_ip = ?"
             result = self.execute_query(query, (printer_ip,))
-        
-        print(f"Database: Query result: {result}")
+
         return result
 
     def get_all_bitmap_settings(self) -> List[Dict[str, Any]]:
