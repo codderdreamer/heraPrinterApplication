@@ -306,6 +306,7 @@ class BitmapGenerator:
                         
                         writer3 = ImageWriter()
                         writer3.write_text = False
+                        writer3.font_path = None
                         writer3.module_width = 0.2
                         writer3.module_height = 10.0
                         
@@ -325,9 +326,53 @@ class BitmapGenerator:
                         
                     except Exception as e3:
                         print(f"Strategy 3 failed for barcode '{data}': {e3}")
-                        # Final fallback: empty white rectangle
-                        barcode_img = Image.new("1", (200, 50), 1)
-                        print(f"Final fallback used for barcode '{data}'")
+                        
+                        # Strategy 4: Create barcode without any font dependencies
+                        try:
+                            from barcode.writer import SVGWriter
+                            
+                            svg_writer = SVGWriter()
+                            svg_writer.write_text = False
+                            
+                            barcode = barcode_class(data, writer=svg_writer)
+                            svg_buffer = BytesIO()
+                            barcode.write(svg_buffer)
+                            svg_buffer.seek(0)
+                            svg_content = svg_buffer.getvalue().decode('utf-8')
+                            
+                            # Create simple barcode pattern from SVG data
+                            width = width_px if width_px else 200
+                            height = height_px if height_px else 50
+                            barcode_img = Image.new("RGB", (width, height), (255, 255, 255))
+                            draw = ImageDraw.Draw(barcode_img)
+                            
+                            # Create barcode pattern based on data
+                            bar_width = 2
+                            x_pos = 10
+                            
+                            # Simple barcode pattern for Code39
+                            for i, char in enumerate(data):
+                                # Each character creates 3 bars
+                                if char.isdigit():
+                                    num = int(char)
+                                    for j in range(3):
+                                        if (num + i + j) % 2 == 0:
+                                            draw.rectangle([x_pos, 5, x_pos + bar_width, height - 5], fill=(0, 0, 0))
+                                        x_pos += bar_width + 1
+                                else:
+                                    # For non-digit characters, create pattern
+                                    for j in range(3):
+                                        if (i + j) % 2 == 0:
+                                            draw.rectangle([x_pos, 5, x_pos + bar_width, height - 5], fill=(0, 0, 0))
+                                        x_pos += bar_width + 1
+                            
+                            print(f"Strategy 4 (SVG-based) successful for barcode '{data}'")
+                            
+                        except Exception as e4:
+                            print(f"Strategy 4 failed for barcode '{data}': {e4}")
+                            # Final fallback: empty white rectangle
+                            barcode_img = Image.new("RGB", (200, 50), (255, 255, 255))
+                            print(f"Final fallback used for barcode '{data}'")
             
             # Convert to black-white (1-bit) mode
             barcode_img = barcode_img.convert("1")

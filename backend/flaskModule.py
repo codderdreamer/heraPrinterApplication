@@ -78,6 +78,7 @@ class FlaskModule:
                 
                 return jsonify(result)
             except Exception as e:
+                print(f"Error in get_printers: {e}")
                 return jsonify({"error": str(e)}), 500
         
         @self.app.route("/api/printers", methods=['POST'])
@@ -103,6 +104,7 @@ class FlaskModule:
                     return jsonify({"error": "Failed to add printer"}), 500
                     
             except Exception as e:
+                print(f"Error in add_printer: {e}")
                 return jsonify({"error": str(e)}), 500
         
         @self.app.route("/api/printer", methods=['POST'])
@@ -130,6 +132,7 @@ class FlaskModule:
                 
                 return jsonify(result)
             except Exception as e:
+                print(f"Error in get_printer: {e}")
                 return jsonify({"error": str(e)}), 500
         
         @self.app.route("/api/printer/update", methods=['POST'])

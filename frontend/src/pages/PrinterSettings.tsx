@@ -35,6 +35,7 @@ const PrinterSettings: React.FC = () => {
       setPrinterCount(data.length);
     } catch (err) {
       setError('Printer listesi yüklenirken hata oluştu');
+      console.error(err);
     } finally {
       setLoading(false);
     }
