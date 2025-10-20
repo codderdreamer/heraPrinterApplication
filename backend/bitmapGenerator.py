@@ -232,170 +232,61 @@ class BitmapGenerator:
     def set_barcode(self, data: str, x: int, y: int, barcode_type: str = "code128", width_px: int = None, height_px: int = None):
         """Add barcode to bitmap at specified coordinates"""
         try:
-            # Barcode type selection
+            # 1) Barkod sınıfları
             barcode_classes = {
                 "code128": Code128,
                 "ean13": EAN13,
                 "code39": Code39
             }
-            
-            if barcode_type.lower() not in barcode_classes:
+            btype = barcode_type.lower()
+            if btype not in barcode_classes:
                 raise ValueError(f"Unsupported barcode type: {barcode_type}")
-            
-            # Create barcode
-            barcode_class = barcode_classes[barcode_type.lower()]
-            
-            # Try multiple strategies to create barcode
-            barcode_img = None
-            
-            # Strategy 1: Try with custom writer settings
-            try:
-                writer = ImageWriter()
-                writer.write_text = False
-                writer.font_path = None
-                writer.module_width = 0.2
-                writer.module_height = 10.0
-                
-                if height_px:
-                    writer.module_height = self._px_to_mm(height_px)
-                if width_px:
-                    writer.module_width = max(0.1, self._px_to_mm(width_px) / 50)
-                
-                barcode = barcode_class(data, writer=writer)
-                buffer = BytesIO()
-                barcode.write(buffer)
-                buffer.seek(0)
-                barcode_img = Image.open(buffer)
-                print(f"Strategy 1 successful for barcode '{data}'")
-                
-            except Exception as e1:
-                print(f"Strategy 1 failed for barcode '{data}': {e1}")
-                
-                # Strategy 2: Try with minimal settings
-                try:
-                    writer2 = ImageWriter()
-                    writer2.write_text = False
-                    writer2.font_path = ""
-                    writer2.module_width = 0.2
-                    writer2.module_height = 10.0
-                    
-                    barcode = barcode_class(data, writer=writer2)
-                    buffer = BytesIO()
-                    barcode.write(buffer)
-                    buffer.seek(0)
-                    barcode_img = Image.open(buffer)
-                    print(f"Strategy 2 successful for barcode '{data}'")
-                    
-                except Exception as e2:
-                    print(f"Strategy 2 failed for barcode '{data}': {e2}")
-                    
-                    # Strategy 3: Try with environment variable manipulation
-                    try:
-                        import os
-                        # Save original font environment
-                        original_font_path = os.environ.get('FONTCONFIG_PATH', '')
-                        original_font_file = os.environ.get('FONTCONFIG_FILE', '')
-                        
-                        # Remove font environment variables completely
-                        if 'FONTCONFIG_PATH' in os.environ:
-                            del os.environ['FONTCONFIG_PATH']
-                        if 'FONTCONFIG_FILE' in os.environ:
-                            del os.environ['FONTCONFIG_FILE']
-                        if 'FONT_DIR' in os.environ:
-                            del os.environ['FONT_DIR']
-                        
-                        writer3 = ImageWriter()
-                        writer3.write_text = False
-                        writer3.font_path = None
-                        writer3.module_width = 0.2
-                        writer3.module_height = 10.0
-                        
-                        barcode = barcode_class(data, writer=writer3)
-                        buffer = BytesIO()
-                        barcode.write(buffer)
-                        buffer.seek(0)
-                        barcode_img = Image.open(buffer)
-                        
-                        # Restore original font environment
-                        if original_font_path:
-                            os.environ['FONTCONFIG_PATH'] = original_font_path
-                        if original_font_file:
-                            os.environ['FONTCONFIG_FILE'] = original_font_file
-                        
-                        print(f"Strategy 3 successful for barcode '{data}'")
-                        
-                    except Exception as e3:
-                        print(f"Strategy 3 failed for barcode '{data}': {e3}")
-                        
-                        # Strategy 4: Create barcode without any font dependencies
-                        try:
-                            from barcode.writer import SVGWriter
-                            
-                            svg_writer = SVGWriter()
-                            svg_writer.write_text = False
-                            
-                            barcode = barcode_class(data, writer=svg_writer)
-                            svg_buffer = BytesIO()
-                            barcode.write(svg_buffer)
-                            svg_buffer.seek(0)
-                            svg_content = svg_buffer.getvalue().decode('utf-8')
-                            
-                            # Create simple barcode pattern from SVG data
-                            width = width_px if width_px else 200
-                            height = height_px if height_px else 50
-                            barcode_img = Image.new("RGB", (width, height), (255, 255, 255))
-                            draw = ImageDraw.Draw(barcode_img)
-                            
-                            # Create barcode pattern based on data
-                            bar_width = 2
-                            x_pos = 10
-                            
-                            # Simple barcode pattern for Code39
-                            for i, char in enumerate(data):
-                                # Each character creates 3 bars
-                                if char.isdigit():
-                                    num = int(char)
-                                    for j in range(3):
-                                        if (num + i + j) % 2 == 0:
-                                            draw.rectangle([x_pos, 5, x_pos + bar_width, height - 5], fill=(0, 0, 0))
-                                        x_pos += bar_width + 1
-                                else:
-                                    # For non-digit characters, create pattern
-                                    for j in range(3):
-                                        if (i + j) % 2 == 0:
-                                            draw.rectangle([x_pos, 5, x_pos + bar_width, height - 5], fill=(0, 0, 0))
-                                        x_pos += bar_width + 1
-                            
-                            print(f"Strategy 4 (SVG-based) successful for barcode '{data}'")
-                            
-                        except Exception as e4:
-                            print(f"Strategy 4 failed for barcode '{data}': {e4}")
-                            # Final fallback: empty white rectangle
-                            barcode_img = Image.new("RGB", (200, 50), (255, 255, 255))
-                            print(f"Final fallback used for barcode '{data}'")
-            
-            # Convert to black-white (1-bit) mode
+
+            # 2) (Önemli) EAN13 veri doğrulama: 12 rakam olmalı (checksum'ı kütüphane ekler)
+            if btype == "ean13":
+                digits = "".join(ch for ch in data if ch.isdigit())
+                if len(digits) < 12:
+                    raise ValueError(f"EAN13 needs 12 digits (got {len(digits)}). Data: '{data}'")
+                data = digits[:12]
+
+            # 3) Writer oluştur (fonta dokunmuyoruz)
+            writer = ImageWriter()
+            writer.write_text = False           # yazıyı kapat (ama font_path AYARLAMA)
+            # writer.font_path = ...  # hiç set ETME
+
+            # mm ayarları
+            writer.module_width = 0.2
+            writer.module_height = 10.0
+            if height_px:
+                writer.module_height = self._px_to_mm(height_px)
+            if width_px:
+                writer.module_width = max(0.1, self._px_to_mm(width_px) / 50)
+
+            # 4) Barcode objesi ve doğrudan PIL Image üretimi
+            barcode_obj = barcode_classes[btype](data, writer=writer)
+
+            # KRİTİK: write() + BytesIO yerine render() kullan.
+            # render() ile direkt PIL.Image döner ve options ile yazıyı kapatırız.
+            barcode_img = barcode_obj.render(writer_options={"write_text": False})
+
+            # 5) 1-bit dönüştürme
             barcode_img = barcode_img.convert("1")
-            
-            # Resize to desired dimensions
+
+            # 6) İstenirse yeniden boyutlandır
             if width_px or height_px:
-                current_width, current_height = barcode_img.size
-                new_width = width_px if width_px else current_width
-                new_height = height_px if height_px else current_height
-                barcode_img = barcode_img.resize((new_width, new_height))
-            
-            # Paste to main image
+                cw, ch = barcode_img.size
+                nw = width_px if width_px else cw
+                nh = height_px if height_px else ch
+                barcode_img = barcode_img.resize((nw, nh))
+
+            # 7) Ana görsele yapıştır
             self.img.paste(barcode_img, (x, y))
-            
-            # Calculate bounding box
             bbox = (x, y, x + barcode_img.width, y + barcode_img.height)
             print(f"Barcode '{data}' ({barcode_type}) bbox: {bbox}")
-            
             return bbox
-            
+
         except Exception as e:
             print(f"Error creating barcode: {e}")
-            # Return empty bbox if barcode creation fails
             return (x, y, x, y)
 
     def set_image(self, image_path: str, x: int, y: int, width_px: int = None, height_px: int = None):
