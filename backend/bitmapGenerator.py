@@ -1,6 +1,7 @@
 from PIL import Image, ImageDraw, ImageFont
-from barcode import Code128, EAN13, Code39
+from barcode import Code128, EAN13, EAN8, Code39
 from barcode.writer import ImageWriter
+import qrcode
 from io import BytesIO
 import json
 import os
@@ -179,7 +180,8 @@ class BitmapGenerator:
         try:
             dpmm = self.dpi / 25.4  # dots per mm
             width_px = int(round(self.width_mm * dpmm))
-            height_px = int(round(self.height_mm * dpmm))
+            # Yükseklik için int() kullanarak 342.519... gibi değerlerin 342 olmasını sağlıyoruz
+            height_px = int(self.height_mm * dpmm)
             return width_px, height_px, dpmm
         except Exception as e:
             print(f"Error setting label scale: {e}")
@@ -232,13 +234,47 @@ class BitmapGenerator:
     def set_barcode(self, data: str, x: int, y: int, barcode_type: str = "code128", width_px: int = None, height_px: int = None):
         """Add barcode to bitmap at specified coordinates"""
         try:
-            # 1) Barkod sınıfları
+            btype = barcode_type.lower()
+            
+            # QR kod desteği
+            if btype == "qr":
+                # QR kod oluştur
+                qr = qrcode.QRCode(
+                    version=1,
+                    error_correction=qrcode.constants.ERROR_CORRECT_L,
+                    box_size=10,
+                    border=4,
+                )
+                qr.add_data(data)
+                qr.make(fit=True)
+                
+                # QR kod görselini oluştur
+                barcode_img = qr.make_image(fill_color="black", back_color="white")
+                
+                # 1-bit dönüştürme
+                barcode_img = barcode_img.convert("1")
+                
+                # İstenirse yeniden boyutlandır
+                if width_px or height_px:
+                    cw, ch = barcode_img.size
+                    nw = width_px if width_px else cw
+                    nh = height_px if height_px else ch
+                    barcode_img = barcode_img.resize((nw, nh), Image.Resampling.LANCZOS)
+                
+                # Ana görsele yapıştır
+                self.img.paste(barcode_img, (x, y))
+                bbox = (x, y, x + barcode_img.width, y + barcode_img.height)
+                print(f"QR Code '{data}' bbox: {bbox}")
+                return bbox
+            
+            # Diğer barkod tipleri (code128, ean13, ean8, code39)
             barcode_classes = {
                 "code128": Code128,
                 "ean13": EAN13,
+                "ean8": EAN8,
                 "code39": Code39
             }
-            btype = barcode_type.lower()
+            
             if btype not in barcode_classes:
                 raise ValueError(f"Unsupported barcode type: {barcode_type}")
 
@@ -248,6 +284,13 @@ class BitmapGenerator:
                 if len(digits) < 12:
                     raise ValueError(f"EAN13 needs 12 digits (got {len(digits)}). Data: '{data}'")
                 data = digits[:12]
+            
+            # EAN8 veri doğrulama: 7 rakam olmalı (checksum'ı kütüphane ekler)
+            if btype == "ean8":
+                digits = "".join(ch for ch in data if ch.isdigit())
+                if len(digits) < 7:
+                    raise ValueError(f"EAN8 needs 7 digits (got {len(digits)}). Data: '{data}'")
+                data = digits[:7]
 
             # 3) Writer oluştur (fonta dokunmuyoruz)
             writer = ImageWriter()
@@ -263,7 +306,11 @@ class BitmapGenerator:
                 writer.module_width = max(0.1, self._px_to_mm(width_px) / 50)
 
             # 4) Barcode objesi ve doğrudan PIL Image üretimi
-            barcode_obj = barcode_classes[btype](data, writer=writer)
+            # Code39 için checksum'ı kapatıyoruz (sona eklenen kontrol karakterini önlemek için)
+            if btype == "code39":
+                barcode_obj = barcode_classes[btype](data, writer=writer, add_checksum=False)
+            else:
+                barcode_obj = barcode_classes[btype](data, writer=writer)
 
             # KRİTİK: write() + BytesIO yerine render() kullan.
             # render() ile direkt PIL.Image döner ve options ile yazıyı kapatırız.
@@ -278,6 +325,7 @@ class BitmapGenerator:
                 nw = width_px if width_px else cw
                 nh = height_px if height_px else ch
                 barcode_img = barcode_img.resize((nw, nh))
+            
 
             # 7) Ana görsele yapıştır
             self.img.paste(barcode_img, (x, y))

@@ -420,7 +420,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   // Bitmap boyutlarını hesapla (mm'den pixel'e)
   const dpi = printer.dpi;
   const widthPx = Math.round((printer.width * dpi) / 25.4);
-  const heightPx = Math.round((printer.height * dpi) / 25.4);
+  // Yükseklik için Math.floor kullanarak backend ile tutarlı hale getiriyoruz
+  const heightPx = Math.floor((printer.height * dpi) / 25.4);
 
   return (
     <div className="bitmap-settings">
@@ -930,6 +931,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                   >
                     <option value="code128">Code 128</option>
                     <option value="code39">Code 39</option>
+                    <option value="ean13">EAN-13</option>
+                    <option value="ean8">EAN-8</option>
                     <option value="qr">QR Code</option>
                   </select>
                 </div>
