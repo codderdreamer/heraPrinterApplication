@@ -20,6 +20,8 @@ class BitmapGenerator:
         self.filename = filename
         self.draw = None
         self.img = None
+        self.text_layer = None
+        self.text_draw = None
 
     def _get_system_font_paths(self):
         """Get common system font paths based on operating system"""
@@ -191,28 +193,35 @@ class BitmapGenerator:
         """Add text to bitmap at specified coordinates with rotation"""
         try:
             font = self._load_font(font_family, font_size_px)
+
+            if self.img is None:
+                raise ValueError("Bitmap not initialized. Call bitmap_init() before adding text.")
+
+            if self.text_layer is None or self.text_draw is None:
+                self.text_layer = Image.new("RGBA", self.img.size, (0, 0, 0, 0))
+                self.text_draw = ImageDraw.Draw(self.text_layer)
             
             if rotation == 0:
                 # Normal text (no rotation)
-                self.draw.text((x, y), text, font=font, fill=(0, 0, 0))  # Black text
-                bbox = self.draw.textbbox((x, y), text, font=font)
+                self.text_draw.text((x, y), text, font=font, fill=(0, 0, 0, 255))  # Black text with transparency
+                bbox = self.text_draw.textbbox((x, y), text, font=font)
             else:
                 # Get text bounding box to calculate center
-                bbox = self.draw.textbbox((x, y), text, font=font)
+                bbox = self.text_draw.textbbox((x, y), text, font=font)
                 text_width = bbox[2] - bbox[0]
                 text_height = bbox[3] - bbox[1]
                 
                 # Create a temporary image just for the text
-                temp_img = Image.new("RGB", (text_width + 20, text_height + 20), (255, 255, 255))  # White background
+                temp_img = Image.new("RGBA", (text_width + 20, text_height + 20), (0, 0, 0, 0))  # Transparent background
                 temp_draw = ImageDraw.Draw(temp_img)
                 
                 # Draw text on temporary image (centered)
                 temp_x = (temp_img.width - text_width) // 2
                 temp_y = (temp_img.height - text_height) // 2
-                temp_draw.text((temp_x, temp_y), text, font=font, fill=(0, 0, 0))  # Black text
+                temp_draw.text((temp_x, temp_y), text, font=font, fill=(0, 0, 0, 255))  # Black text with transparency
                 
                 # Rotate the temporary image around its center
-                rotated_img = temp_img.rotate(rotation, expand=False, fillcolor=(255, 255, 255))
+                rotated_img = temp_img.rotate(rotation, expand=False, fillcolor=(0, 0, 0, 0))
                 
                 # Calculate the position to paste the rotated text
                 # So that the center of the rotated text is at (x, y)
@@ -220,7 +229,7 @@ class BitmapGenerator:
                 paste_y = y - rotated_img.height // 2
                 
                 # Paste the rotated text onto the main image
-                self.img.paste(rotated_img, (paste_x, paste_y))
+                self.text_layer.paste(rotated_img, (paste_x, paste_y), rotated_img)
                 
                 # Update bounding box for rotated text
                 bbox = (paste_x, paste_y, paste_x + rotated_img.width, paste_y + rotated_img.height)
@@ -433,12 +442,21 @@ class BitmapGenerator:
             # Create Image and Draw objects - RGB format for better text visibility
             self.img = Image.new("RGB", (W, H), (255, 255, 255))  # RGB, white background
             self.draw = ImageDraw.Draw(self.img)
+            self.text_layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+            self.text_draw = ImageDraw.Draw(self.text_layer)
         except Exception as e:
             print(f"Error initializing bitmap: {e}")
 
     def bitmap_finish(self):
         """Save bitmap to file"""
         try:
+            if self.text_layer is not None:
+                base_rgba = self.img.convert("RGBA")
+                combined = Image.alpha_composite(base_rgba, self.text_layer)
+                self.img = combined.convert("RGB")
+                self.text_layer = None
+                self.text_draw = None
+
             # Convert RGB to 1-bit for printer compatibility
             if self.img.mode != "1":
                 # Convert to grayscale first, then to 1-bit
