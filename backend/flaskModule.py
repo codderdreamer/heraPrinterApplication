@@ -4,6 +4,7 @@ from threading import Thread
 import os
 import json
 import sys
+import base64
 
 # Import with PyInstaller compatibility
 try:
@@ -314,32 +315,54 @@ class FlaskModule:
         def save_bitmap_settings():
             try:
                 printer_name = "ÖN MASA"
+
+                # Gelen JSON payload (testApplication -> heraPrinterApplication)
+                # 1) Doğrudan etiket alanları ile gelebilir:
+                # {
+                #   "PRODUCT_CODE": "...",
+                #   "MODEL_NUMBER": "...",
+                #   "SYSTEM": "...",
+                #   "RATED_VOLTAGE": "...",
+                #   "RATED_POWER": "...",
+                #   "OPERATING_TEMP": "...",
+                #   "MANUFACTURER": "...",
+                #   "BT_MAC": "...",
+                #   "LAN_MAC": "...",
+                #   "IMEI_NUMBER": "...",
+                #   "SITE_ID": "...",
+                #   "DATE_NUMBER": "...",
+                #   "SERIAL_NUMBER": "...",
+                #   "mid": "...",
+                #   "ip": "..."
+                # }
+                #
+                # 2) Veya SAP JSON'ı ile gelebilir (urunjsonformat_):
+                #    Bu durumda SAP alanları -> etiket alanlarına map edilir.
+
+                payload = request.get_json(silent=True) or {}
+
+                # Payload doğrudan etiket alanları ile GELMELİ (SAP JSON mapping burada yapılmıyor)
                 data = {
-                    "PRODUCT_CODE" : "PRODUCT_CODE",
-                    "MODEL_NUMBER" : "MODEL_NUMBER",
-                    "SYSTEM" : "SYSTEM",
-                    "RATED_VOLTAGE" : "RATED_VOLTAGE",
-                    "RATED_POWER" : "RATED_POWER",
-                    "OPERATING_TEMP" : "OPERATING_TEMP",
-                    "MANUFACTURER" : "MANUFACTURER",
-
-                    "BT_MAC" : "BT_MAC",
-                    "LAN_MAC" : "LAN_MAC",
-                    "IMEI_NUMBER" : "IMEI_NUMBER",
-
-                    "SITE_ID" : "SITE_ID",   # manufaturer link
-
-                    "DATE_NUMBER" : "DATE_NUMBER",
-
-                    "SERIAL_NUMBER" : "SERIAL_NUMBER",
-
-                    "mid" : "mid",
-                    "ip" : "ip"
+                    "PRODUCT_CODE": payload.get("PRODUCT_CODE"),
+                    "MODEL_NUMBER": payload.get("MODEL_NUMBER"),
+                    "SYSTEM": payload.get("SYSTEM"),
+                    "RATED_VOLTAGE": payload.get("RATED_VOLTAGE"),
+                    "RATED_POWER": payload.get("RATED_POWER"),
+                    "OPERATING_TEMP": payload.get("OPERATING_TEMP"),
+                    "MANUFACTURER": payload.get("MANUFACTURER"),
+                    "BT_MAC": payload.get("BT_MAC"),
+                    "LAN_MAC": payload.get("LAN_MAC"),
+                    "IMEI_NUMBER": payload.get("IMEI_NUMBER"),
+                    "SITE_ID": payload.get("SITE_ID"),
+                    "DATE_NUMBER": payload.get("DATE_NUMBER"),
+                    "SERIAL_NUMBER": payload.get("SERIAL_NUMBER"),
+                    "mid": payload.get("mid"),
+                    "ip": payload.get("ip")
                 }
 
 
 
-                ip =self.application.printers.get_printer_ip_by_name(printer_name)
+                ip = self.application.printers.get_printer_ip_by_name(printer_name)
                 print(f"Printer IP: {ip}")
                 settings_data = self.application.printers.get_printer_data_by_ip(ip)
                 print(f"Settings data: {settings_data}")
@@ -361,6 +384,7 @@ class FlaskModule:
                     "barcodeItems": barcode_items
                 }
 
+                # Değer alanlarını doldur
                 for value_data in value_items:
                     if value_data["valueId"] == "SERIAL_NUMBER":
                         value_data["content"] = data["SERIAL_NUMBER"]
@@ -388,6 +412,31 @@ class FlaskModule:
                         value_data["content"] = data["OPERATING_TEMP"]
                     elif value_data["valueId"] == "MANUFACTURER":
                         value_data["content"] = data["MANUFACTURER"]
+                    elif value_data["valueId"] == "IP":
+                        # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
+                        ip_value = data["ip"]
+                        if ip_value:
+                            try:
+                                # Proje kökü: backend klasörünün bir üstü
+                                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                                images_dir = os.path.join(project_root, "database", "images")
+                                image_path = os.path.join(images_dir, f"{ip_value}.png")
+
+                                if os.path.exists(image_path):
+                                    with open(image_path, "rb") as img_file:
+                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
+
+                                    # Bu value item'i image tipine çevir
+                                    value_data["type"] = "image"
+                                    value_data["content"] = ""  # text kullanılmayacak
+                                    value_data["imageFile"] = encoded
+                                    # imageWidth / imageHeight ayarlıysa tasarımdaki değerler kullanılacak
+                                else:
+                                    # Dosya yoksa fallback olarak text yaz
+                                    value_data["content"] = ip_value
+                            except Exception as e:
+                                print(f"IP image load error for {ip_value}: {e}")
+                                value_data["content"] = ip_value
                     
 
                 printers = self.application.printers.search_printers_by_name(printer_name)
