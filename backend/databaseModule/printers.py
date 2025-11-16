@@ -130,3 +130,26 @@ class Printers(DatabaseModule):
         if settings:
             return settings[0]
         return None
+
+    def get_printer_ip_by_name(self, printer_name: str) -> Dict[str, Any]:
+        try:
+            query = "SELECT ip FROM printers WHERE name = ?"
+            result = self.execute_query(query, (printer_name,))
+            if result:
+                return result[0]["ip"]
+            return None
+        except Exception as e:
+            print(f"Error getting printer IP by name: {e}")
+            return None
+
+    def get_printer_data_by_ip(self, ip: str) -> Dict[str, Any]:
+        try:
+            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ?"
+            result = self.execute_query(query, (ip,))
+            if result:
+                return result[0]["settings_data"]
+            return None
+        except Exception as e:
+            print(f"Error getting printer data by IP: {e}")
+            return None
+

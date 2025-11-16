@@ -310,8 +310,113 @@ class FlaskModule:
                 print(f"Logo endpoint error: {e}")
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/bitmap-settings", methods=['POST'])
+        @self.app.route("/api/testApplication/print", methods=['POST'])
         def save_bitmap_settings():
+            try:
+                printer_name = "ÖN MASA"
+                data = {
+                    "PRODUCT_CODE" : "PRODUCT_CODE",
+                    "MODEL_NUMBER" : "MODEL_NUMBER",
+                    "SYSTEM" : "SYSTEM",
+                    "RATED_VOLTAGE" : "RATED_VOLTAGE",
+                    "RATED_POWER" : "RATED_POWER",
+                    "OPERATING_TEMP" : "OPERATING_TEMP",
+                    "MANUFACTURER" : "MANUFACTURER",
+
+                    "BT_MAC" : "BT_MAC",
+                    "LAN_MAC" : "LAN_MAC",
+                    "IMEI_NUMBER" : "IMEI_NUMBER",
+
+                    "SITE_ID" : "SITE_ID",   # manufaturer link
+
+                    "DATE_NUMBER" : "DATE_NUMBER",
+
+                    "SERIAL_NUMBER" : "SERIAL_NUMBER",
+
+                    "mid" : "mid",
+                    "ip" : "ip"
+                }
+
+
+
+                ip =self.application.printers.get_printer_ip_by_name(printer_name)
+                print(f"Printer IP: {ip}")
+                settings_data = self.application.printers.get_printer_data_by_ip(ip)
+                print(f"Settings data: {settings_data}")
+                settings_data_json = json.loads(settings_data)
+                text_items = settings_data_json.get('textItems', [])
+                value_items = settings_data_json.get('valueItems', [])
+                icon_items = settings_data_json.get('iconItems', [])
+                barcode_items = settings_data_json.get('barcodeItems', [])
+                
+                print(f"Text items: {text_items}")
+                print(f"Value items: {value_items}")
+                print(f"Icon items: {icon_items}")
+                print(f"Barcode items: {barcode_items}")
+                
+                settings_data = {
+                    "textItems": text_items,
+                    "valueItems": value_items,
+                    "iconItems": icon_items,
+                    "barcodeItems": barcode_items
+                }
+
+                for value_data in value_items:
+                    if value_data["valueId"] == "SERIAL_NUMBER":
+                        value_data["content"] = data["SERIAL_NUMBER"]
+                    elif value_data["valueId"] == "DATE_NUMBER":
+                        value_data["content"] = data["DATE_NUMBER"]
+                    elif value_data["valueId"] == "SITE_ID":
+                        value_data["content"] = data["SITE_ID"]
+                    elif value_data["valueId"] == "IMEI_NUMBER":
+                        value_data["content"] = data["IMEI_NUMBER"]
+                    elif value_data["valueId"] == "LAN_MAC":
+                        value_data["content"] = data["LAN_MAC"]
+                    elif value_data["valueId"] == "BT_MAC":
+                        value_data["content"] = data["BT_MAC"]
+                    elif value_data["valueId"] == "PRODUCT_CODE":
+                        value_data["content"] = data["PRODUCT_CODE"]
+                    elif value_data["valueId"] == "MODEL_NUMBER":
+                        value_data["content"] = data["MODEL_NUMBER"]
+                    elif value_data["valueId"] == "SYSTEM":
+                        value_data["content"] = data["SYSTEM"]
+                    elif value_data["valueId"] == "RATED_VOLTAGE":
+                        value_data["content"] = data["RATED_VOLTAGE"]
+                    elif value_data["valueId"] == "RATED_POWER":
+                        value_data["content"] = data["RATED_POWER"]
+                    elif value_data["valueId"] == "OPERATING_TEMP":
+                        value_data["content"] = data["OPERATING_TEMP"]
+                    elif value_data["valueId"] == "MANUFACTURER":
+                        value_data["content"] = data["MANUFACTURER"]
+                    
+
+                printers = self.application.printers.search_printers_by_name(printer_name)
+                width = printers[0]["width"]
+                height = printers[0]["height"]
+                dpi = printers[0]["dpi"]
+                name = "test"
+
+                generator = BitmapGenerator(
+                    width, 
+                    height, 
+                    dpi,
+                    f"bitmap_{ip}_{name}.bmp"
+                )
+                generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
+                bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
+                if os.path.exists(bitmap_path):
+                    success = printer_manager.print_bmp(ip, bitmap_path, width, height)
+                    if success:
+                        return jsonify({"message": "Bitmap printed successfully"})
+                    else:
+                        return jsonify({"error": "Failed to print bitmap"}), 500
+                else:
+                    return jsonify({"error": "Failed to generate bitmap"}), 500
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/bitmap-settings-copy", methods=['POST'])
+        def save_bitmap_settings_copy():
             try:
                 data = request.get_json()
                 ip = data.get('ip')
