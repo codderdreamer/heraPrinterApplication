@@ -212,7 +212,13 @@ class BitmapGenerator:
                 text_height = bbox[3] - bbox[1]
                 
                 # Create a temporary image just for the text
-                temp_img = Image.new("RGBA", (text_width + 20, text_height + 20), (0, 0, 0, 0))  # Transparent background
+                # Extra padding is added to avoid clipping when rotated (especially at 90/270 degrees)
+                padding = 40
+                temp_img = Image.new(
+                    "RGBA",
+                    (text_width + padding, text_height + padding),
+                    (0, 0, 0, 0)
+                )  # Transparent background
                 temp_draw = ImageDraw.Draw(temp_img)
                 
                 # Draw text on temporary image (centered)
@@ -221,7 +227,8 @@ class BitmapGenerator:
                 temp_draw.text((temp_x, temp_y), text, font=font, fill=(0, 0, 0, 255))  # Black text with transparency
                 
                 # Rotate the temporary image around its center
-                rotated_img = temp_img.rotate(rotation, expand=False, fillcolor=(0, 0, 0, 0))
+                # expand=True => canvas genişler, metnin köşeleri kesilmez
+                rotated_img = temp_img.rotate(rotation, expand=True, fillcolor=(0, 0, 0, 0))
                 
                 # Calculate the position to paste the rotated text
                 # So that the center of the rotated text is at (x, y)

@@ -1,5 +1,5 @@
-const API_BASE_URL = 'http://10.254.240.40:8088/api';
-//const API_BASE_URL = 'http://127.0.0.1:8088/api';
+//const API_BASE_URL = 'http://10.254.240.40:8088/api';
+const API_BASE_URL = 'http://127.0.0.1:8088/api';
 
 export interface Printer {
   id: number;
