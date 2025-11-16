@@ -464,8 +464,8 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        @self.app.route("/api/bitmap-settings-copy", methods=['POST'])
-        def save_bitmap_settings_copy():
+        @self.app.route("/api/bitmap-settings", methods=['POST'])
+        def save_bitmap_settings():
             try:
                 data = request.get_json()
                 ip = data.get('ip')
