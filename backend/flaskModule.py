@@ -312,7 +312,7 @@ class FlaskModule:
                 return jsonify({"error": str(e)}), 500
 
         @self.app.route("/api/testApplication/print", methods=['POST'])
-        def save_bitmap_settings():
+        def test_application_print():
             try:
                 printer_name = "ÖN MASA"
 

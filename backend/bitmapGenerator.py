@@ -358,11 +358,8 @@ class BitmapGenerator:
         try:
             # Load image
             img = Image.open(image_path)
-            
-            # Convert to black-white (1-bit) mode
-            img = img.convert("1")
-            
-            # Resize
+
+            # ÖNCE yüksek çözünürlüklü olarak resize et, SONRA 1-bit'e çevir
             if width_px or height_px:
                 current_width, current_height = img.size
                 
@@ -379,6 +376,9 @@ class BitmapGenerator:
                     ratio = height_px / current_height
                     new_width = int(current_width * ratio)
                     img = img.resize((new_width, height_px))
+
+            # En son, net ve keskin kenarlar için 1-bit'e çevir
+            #img = img.convert("1")
             
             # Paste to main image
             self.img.paste(img, (x, y))
@@ -405,27 +405,27 @@ class BitmapGenerator:
             
             # Create image from bytes
             img = Image.open(BytesIO(image_data))
-            
-            # Convert to black-white (1-bit) mode
-            img = img.convert("1")
-            
-            # Resize only if valid dimensions are provided
+
+            # Resize only if valid dimensions are provided (önce resize, sonra 1-bit)
             if (width_px and width_px > 0) or (height_px and height_px > 0):
                 current_width, current_height = img.size
                 
                 if width_px and height_px and width_px > 0 and height_px > 0:
                     # Both dimensions given - direct resize
-                    img = img.resize((width_px, height_px))
+                    img = img.resize((width_px, height_px), Image.Resampling.LANCZOS)
                 elif width_px and width_px > 0:
                     # Only width given - proportional resize
                     ratio = width_px / current_width
                     new_height = int(current_height * ratio)
-                    img = img.resize((width_px, new_height))
+                    img = img.resize((width_px, new_height), Image.Resampling.LANCZOS)
                 elif height_px and height_px > 0:
                     # Only height given - proportional resize
                     ratio = height_px / current_height
                     new_width = int(current_width * ratio)
-                    img = img.resize((new_width, height_px))
+                    img = img.resize((new_width, height_px), Image.Resampling.LANCZOS)
+
+            # En son, 1-bit'e çevir (siyah/beyaz, daha keskin)
+            #img = img.convert("1")
             
             # Paste to main image
             self.img.paste(img, (x, y))
@@ -464,11 +464,15 @@ class BitmapGenerator:
                 self.text_layer = None
                 self.text_draw = None
 
-            # Convert RGB to 1-bit for printer compatibility
-            if self.img.mode != "1":
-                # Convert to grayscale first, then to 1-bit
-                gray_img = self.img.convert("L")
-                self.img = gray_img.convert("1")
+            # Convert to high-quality 1-bit (monochrome) for printer compatibility
+            # 1) Her şeyi gri tona çevir (0-255)
+            
+            gray_img = self.img.convert("L")
+
+            # 2) Kontrollü threshold ile (dithersiz) 1-bit'e çevir
+            #    Daha yüksek eşik (örn. 200) ince çizgileri korur, halo'yu azaltır.
+            threshold = 200
+            self.img = gray_img.point(lambda x: 0 if x < threshold else 255, "1")
             
             self.img.save(self.filename, format="BMP")
             print(f"Bitmap saved as {self.filename}")
