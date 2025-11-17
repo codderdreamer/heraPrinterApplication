@@ -1,0 +1,23 @@
+{
+    "PRODUCT_CODE": "TEST_CODE",
+    "MODEL_NUMBER": "TEST_MODEL",
+    "SYSTEM": "RFID, Wifi, Ethernet, Bluetooth",
+    "RATED_VOLTAGE": "Single Phase 196-264 VAC 50-60 Hz",
+    "RATED_POWER": "Max. 32A - 7.4kW",
+    "OPERATING_TEMP": "-25°C ~ 55°C",
+    "MANUFACTURER": "Hera Mobilite Elektronik Üretim A.Ş.",
+    "BT_MAC": "00:11:22:33:44:55",
+    "LAN_MAC": "AA:BB:CC:DD:EE:FF",
+    "IMEI_NUMBER": "123456789012345",
+    "SITE_ID": "www.heracharge.com",
+    "DATE_NUMBER": "17/11/2025",
+    "SERIAL_NUMBER": "1234",
+    "BODY_COLOR": "RED",
+    "EAN_NUMBER": "123456789012345",
+    "mid": true,
+    "mid_year": "2025",
+    "mid_labno": "1234",
+    "ip": "IP54",
+    "BT_NAME": "BT_NAME",
+    "PIN_CODE": "PIN_CODE"
+}

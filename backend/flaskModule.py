@@ -42,7 +42,7 @@ class FlaskModule:
         
         self.setup_routes()
         Thread(target=self.run, daemon=True).start()
-        
+              
     def setup_routes(self):
         @self.app.route("/")
         def main():
@@ -311,6 +311,7 @@ class FlaskModule:
                 print(f"Logo endpoint error: {e}")
                 return jsonify({"error": str(e)}), 500
 
+
         @self.app.route("/api/testApplication/print", methods=['POST'])
         def test_application_print():
             try:
@@ -356,11 +357,15 @@ class FlaskModule:
                     "SITE_ID": payload.get("SITE_ID") or "",
                     "DATE_NUMBER": payload.get("DATE_NUMBER") or "",
                     "SERIAL_NUMBER": payload.get("SERIAL_NUMBER") or "",
-                    "mid": payload.get("mid") or "",
+                    "BODY_COLOR": payload.get("BODY_COLOR") or "",
+                    "EAN_NUMBER": payload.get("EAN_NUMBER") or "",
+                    "mid": payload.get("mid") or False,
+                    "mid_year": payload.get("mid_year") or "",
+                    "mid_lab": payload.get("mid_lab") or "",
                     "ip": payload.get("ip") or ""
                 }
 
-
+                self.application.utils.save_device_data(data["SERIAL_NUMBER"], data)
 
                 ip = self.application.printers.get_printer_ip_by_name(printer_name)
                 print(f"Printer IP: {ip}")
@@ -435,8 +440,38 @@ class FlaskModule:
                                     # Dosya yoksa fallback olarak text yaz
                                     value_data["content"] = ip_value
                             except Exception as e:
-                                print(f"IP image load error for {ip_value}: {e}")
-                                value_data["content"] = ip_value
+                                print(f"IP image load error: {e}")
+                                # Fallback: IP değerini text olarak göster
+                                value_data["content"] = data.get("ip", "")
+                    elif value_data["valueId"] == "MID":
+                        # MID varsa: MID M{mid_year}.png göster
+                        try:
+                            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                            images_dir = os.path.join(project_root, "database", "images")
+                            
+                            has_mid = data.get("mid", False)
+                            mid_year = data.get("mid_year", "")
+                            
+                            if has_mid and mid_year:
+                                image_filename = f"MID M{mid_year}.png"
+                                image_path = os.path.join(images_dir, image_filename)
+                                
+                                if os.path.exists(image_path):
+                                    with open(image_path, "rb") as img_file:
+                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
+                                    
+                                    value_data["type"] = "image"
+                                    value_data["content"] = ""
+                                    value_data["imageFile"] = encoded
+                                else:
+                                    # MID dosyası yoksa fallback olarak text yaz
+                                    value_data["content"] = f"MID M{mid_year}"
+                            else:
+                                # MID yoksa bu value item'ı boş bırak
+                                value_data["content"] = ""
+                        except Exception as e:
+                            print(f"MID image load error: {e}")
+                            value_data["content"] = ""
                     
                 # Barkod alanlarını seri numarası ile doldur
                 for barcode_item in barcode_items:
@@ -466,6 +501,21 @@ class FlaskModule:
                 else:
                     return jsonify({"error": "Failed to generate bitmap"}), 500
             except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+
+
+        @self.app.route("/api/barcodeScanner/print", methods=['POST'])
+        def barcode_scanner_print():
+            try:
+                data = request.get_json()
+
+                self.application.utils.print_paket(data)
+                self.application.utils.print_qr(data)
+
+                return jsonify({"message": "Barcode printed successfully"})
+            except Exception as e:
+                print(f"barcode_scanner_print error: {e}")
                 return jsonify({"error": str(e)}), 500
 
         @self.app.route("/api/bitmap-settings", methods=['POST'])

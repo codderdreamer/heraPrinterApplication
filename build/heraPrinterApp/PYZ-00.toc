@@ -455,6 +455,10 @@
    'C:\\Users\\syucedag\\OneDrive - Dias Bilişim ve Teknoloji Hizmetleri '
    'A.Ş\\Desktop\\all_projects\\sevda\\mygit\\heraPrinterApplication\\backend\\tscPrinterModule.py',
    'PYMODULE'),
+  ('backend.utils',
+   'C:\\Users\\syucedag\\OneDrive - Dias Bilişim ve Teknoloji Hizmetleri '
+   'A.Ş\\Desktop\\all_projects\\sevda\\mygit\\heraPrinterApplication\\backend\\utils.py',
+   'PYMODULE'),
   ('barcode',
    'C:\\Users\\syucedag\\AppData\\Local\\Programs\\Python\\Python311\\Lib\\site-packages\\barcode\\__init__.py',
    'PYMODULE'),

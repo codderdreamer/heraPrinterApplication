@@ -18,6 +18,7 @@ try:
     from backend.databaseModule.printers import Printers
     from backend.flaskModule import FlaskModule
     from backend.tscPrinterModule import TSCPrinter
+    from backend.utils import Utils
 except ImportError as e:
     print(f"First import attempt failed: {e}")
     try:
@@ -25,6 +26,7 @@ except ImportError as e:
         from databaseModule.printers import Printers
         from flaskModule import FlaskModule
         from tscPrinterModule import TSCPrinter
+        from utils import Utils
         print("Fallback imports successful")
     except ImportError as e2:
         print(f"Fallback import error: {e2}")
@@ -41,7 +43,7 @@ class Application:
     def __init__(self):
         self.printers = Printers()
         self.flaskModule = FlaskModule(self)
-        
+        self.utils = Utils(self)
     def run(self):
         self.flaskModule.run()
 
