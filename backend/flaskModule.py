@@ -343,21 +343,21 @@ class FlaskModule:
 
                 # Payload doğrudan etiket alanları ile GELMELİ (SAP JSON mapping burada yapılmıyor)
                 data = {
-                    "PRODUCT_CODE": payload.get("PRODUCT_CODE"),
-                    "MODEL_NUMBER": payload.get("MODEL_NUMBER"),
-                    "SYSTEM": payload.get("SYSTEM"),
-                    "RATED_VOLTAGE": payload.get("RATED_VOLTAGE"),
-                    "RATED_POWER": payload.get("RATED_POWER"),
-                    "OPERATING_TEMP": payload.get("OPERATING_TEMP"),
-                    "MANUFACTURER": payload.get("MANUFACTURER"),
-                    "BT_MAC": payload.get("BT_MAC"),
-                    "LAN_MAC": payload.get("LAN_MAC"),
-                    "IMEI_NUMBER": payload.get("IMEI_NUMBER"),
-                    "SITE_ID": payload.get("SITE_ID"),
-                    "DATE_NUMBER": payload.get("DATE_NUMBER"),
-                    "SERIAL_NUMBER": payload.get("SERIAL_NUMBER"),
-                    "mid": payload.get("mid"),
-                    "ip": payload.get("ip")
+                    "PRODUCT_CODE": payload.get("PRODUCT_CODE") or "",
+                    "MODEL_NUMBER": payload.get("MODEL_NUMBER") or "",
+                    "SYSTEM": payload.get("SYSTEM") or "",
+                    "RATED_VOLTAGE": payload.get("RATED_VOLTAGE") or "",
+                    "RATED_POWER": payload.get("RATED_POWER") or "",
+                    "OPERATING_TEMP": payload.get("OPERATING_TEMP") or "",
+                    "MANUFACTURER": payload.get("MANUFACTURER") or "",
+                    "BT_MAC": payload.get("BT_MAC") or "",
+                    "LAN_MAC": payload.get("LAN_MAC") or "",
+                    "IMEI_NUMBER": payload.get("IMEI_NUMBER") or "",
+                    "SITE_ID": payload.get("SITE_ID") or "",
+                    "DATE_NUMBER": payload.get("DATE_NUMBER") or "",
+                    "SERIAL_NUMBER": payload.get("SERIAL_NUMBER") or "",
+                    "mid": payload.get("mid") or "",
+                    "ip": payload.get("ip") or ""
                 }
 
 
@@ -438,6 +438,10 @@ class FlaskModule:
                                 print(f"IP image load error for {ip_value}: {e}")
                                 value_data["content"] = ip_value
                     
+                # Barkod alanlarını seri numarası ile doldur
+                for barcode_item in barcode_items:
+                    barcode_item["data"] = data["SERIAL_NUMBER"]
+
 
                 printers = self.application.printers.search_printers_by_name(printer_name)
                 width = printers[0]["width"]
