@@ -315,7 +315,7 @@ class FlaskModule:
         @self.app.route("/api/testApplication/print", methods=['POST'])
         def test_application_print():
             try:
-                printer_name = "ÖN MASA"
+                printer_name = "ARKA MASA"
 
                 # Gelen JSON payload (testApplication -> heraPrinterApplication)
                 # 1) Doğrudan etiket alanları ile gelebilir:
