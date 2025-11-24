@@ -144,17 +144,19 @@ class Utils:
             }
 
             for value_data in value_items:
-                if value_data["valueId"] == "PRODUCT_CODE":
-                    value_data["content"] = device_data["PRODUCT_CODE"]
-                elif value_data["valueId"] == "SERIAL_NUMBER":
-                    value_data["content"] = device_data["SERIAL_NUMBER"]
-                elif value_data["valueId"] == "BT_NAME":
-                    value_data["content"] = device_data["BT_NAME"]
-                elif value_data["valueId"] == "PIN_CODE":
-                    value_data["content"] = device_data["PIN_CODE"]
+                value_id = value_data.get("valueId")
+                if value_id == "PRODUCT_CODE":
+                    value_data["content"] = device_data.get("PRODUCT_CODE", "")
+                elif value_id == "SERIAL_NUMBER":
+                    value_data["content"] = device_data.get("SERIAL_NUMBER", serial_number)
+                elif value_id == "BT_NAME":
+                    value_data["content"] = device_data.get("BT_NAME", "")
+                elif value_id == "PIN_CODE":
+                    value_data["content"] = device_data.get("PIN_CODE", "")
 
+            pin_code = device_data.get("PIN_CODE", "")
             for barcode_item in barcode_items:
-                barcode_item["data"] = device_data["PIN_CODE"]
+                barcode_item["data"] = pin_code
 
             printers = self.application.printers.search_printers_by_name(printer_name)
             width = printers[0]["width"]
