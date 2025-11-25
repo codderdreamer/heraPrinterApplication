@@ -1,4 +1,4 @@
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from barcode import Code128, EAN13, EAN8, Code39
 from barcode.writer import ImageWriter
 import qrcode
@@ -333,7 +333,7 @@ class BitmapGenerator:
             barcode_img = barcode_obj.render(writer_options={"write_text": False})
 
             # 5) 1-bit dönüştürme
-            barcode_img = barcode_img.convert("1")
+            #barcode_img = barcode_img.convert("1")
 
             # 6) İstenirse yeniden boyutlandır
             if width_px or height_px:
@@ -341,7 +341,6 @@ class BitmapGenerator:
                 nw = width_px if width_px else cw
                 nh = height_px if height_px else ch
                 barcode_img = barcode_img.resize((nw, nh))
-            
 
             # 7) Ana görsele yapıştır
             self.img.paste(barcode_img, (x, y))
