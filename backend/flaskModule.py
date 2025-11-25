@@ -365,7 +365,8 @@ class FlaskModule:
                     "ip": payload.get("ip") or "",
                     "BT_NAME": payload.get("BT_NAME") or "",
                     "PIN_CODE": payload.get("PIN_CODE") or "",
-                    "LOGO_NAME": payload.get("LOGO_NAME") or ""
+                    "LOGO_NAME": payload.get("LOGO_NAME") or "",
+                    "OEM_COMPANY_NAME": payload.get("OEM_COMPANY_NAME") or ""
                 }
 
                 self.application.utils.save_device_data(data["SERIAL_NUMBER"], data)
@@ -425,7 +426,17 @@ class FlaskModule:
                     elif value_data["valueId"] == "PIN_CODE":
                         value_data["content"] = data["PIN_CODE"]
                     elif value_data["valueId"] == "LOGO_NAME":
-                        pass
+                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                        images_dir = os.path.join(project_root, "database", "images")
+                        image_path = os.path.join(images_dir, f"{data['LOGO_NAME']}.png")
+                        if os.path.exists(image_path):
+                            with open(image_path, "rb") as img_file:
+                                encoded = base64.b64encode(img_file.read()).decode("ascii")
+                            value_data["type"] = "image"
+                            value_data["content"] = ""
+                            value_data["imageFile"] = encoded
+                    elif value_data["valueId"] == "mid_lab":
+                        value_data["content"] = data["mid_lab"]
                     elif value_data["valueId"] == "IP":
                         # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
                         ip_value = data["ip"]
