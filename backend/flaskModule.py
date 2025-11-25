@@ -362,7 +362,10 @@ class FlaskModule:
                     "mid": payload.get("mid") or False,
                     "mid_year": payload.get("mid_year") or "",
                     "mid_lab": payload.get("mid_lab") or "",
-                    "ip": payload.get("ip") or ""
+                    "ip": payload.get("ip") or "",
+                    "BT_NAME": payload.get("BT_NAME") or "",
+                    "PIN_CODE": payload.get("PIN_CODE") or "",
+                    "LOGO_NAME": payload.get("LOGO_NAME") or ""
                 }
 
                 self.application.utils.save_device_data(data["SERIAL_NUMBER"], data)
@@ -400,9 +403,9 @@ class FlaskModule:
                     elif value_data["valueId"] == "IMEI_NUMBER":
                         value_data["content"] = data["IMEI_NUMBER"]
                     elif value_data["valueId"] == "LAN_MAC":
-                        value_data["content"] = data["LAN_MAC"]
+                        value_data["content"] = (data["LAN_MAC"] or "").upper()
                     elif value_data["valueId"] == "BT_MAC":
-                        value_data["content"] = data["BT_MAC"]
+                        value_data["content"] = (data["BT_MAC"] or "").upper()
                     elif value_data["valueId"] == "PRODUCT_CODE":
                         value_data["content"] = data["PRODUCT_CODE"]
                     elif value_data["valueId"] == "MODEL_NUMBER":
@@ -417,6 +420,12 @@ class FlaskModule:
                         value_data["content"] = data["OPERATING_TEMP"]
                     elif value_data["valueId"] == "MANUFACTURER":
                         value_data["content"] = data["MANUFACTURER"]
+                    elif value_data["valueId"] == "BT_NAME":
+                        value_data["content"] = data["BT_NAME"]
+                    elif value_data["valueId"] == "PIN_CODE":
+                        value_data["content"] = data["PIN_CODE"]
+                    elif value_data["valueId"] == "LOGO_NAME":
+                        pass
                     elif value_data["valueId"] == "IP":
                         # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
                         ip_value = data["ip"]
@@ -465,12 +474,18 @@ class FlaskModule:
                                     value_data["imageFile"] = encoded
                                 else:
                                     # MID dosyası yoksa fallback olarak text yaz
+                                    value_data["type"] = "text"
+                                    value_data["imageFile"] = ""
                                     value_data["content"] = f"MID M{mid_year}"
                             else:
-                                # MID yoksa bu value item'ı boş bırak
+                                # MID yoksa bu value item'ı boş bırak ve image'i temizle
+                                value_data["type"] = "text"
+                                value_data["imageFile"] = ""
                                 value_data["content"] = ""
                         except Exception as e:
                             print(f"MID image load error: {e}")
+                            value_data["type"] = "text"
+                            value_data["imageFile"] = ""
                             value_data["content"] = ""
                     
                 # Barkod alanlarını seri numarası ile doldur

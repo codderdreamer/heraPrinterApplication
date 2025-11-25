@@ -358,24 +358,42 @@ class BitmapGenerator:
         try:
             # Load image
             img = Image.open(image_path)
+            
+            # Convert RGBA to RGB if needed (alpha channel'ı düzgün işle)
+            if img.mode == 'RGBA':
+                # Alpha channel'ı mask olarak kullan ve beyaz arka plan üzerine yapıştır
+                # Önce RGB'ye çevir (beyaz arka plan ile)
+                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                rgb_img.paste(img, mask=img.split()[3])  # Alpha channel'ı mask olarak kullan
+                img = rgb_img
+            elif img.mode not in ('RGB', 'L', '1'):
+                # Diğer formatları RGB'ye çevir
+                img = img.convert('RGB')
 
-            # ÖNCE yüksek çözünürlüklü olarak resize et, SONRA 1-bit'e çevir
+            # ÖNCE yüksek çözünürlüklü olarak resize et, aspect ratio korunarak max limitler içinde
             if width_px or height_px:
                 current_width, current_height = img.size
                 
                 if width_px and height_px:
-                    # Both dimensions given - direct resize
-                    img = img.resize((width_px, height_px))
+                    # Both dimensions given - treat as max limits, maintain aspect ratio
+                    # Calculate scaling ratios for both dimensions
+                    width_ratio = width_px / current_width
+                    height_ratio = height_px / current_height
+                    # Use the smaller ratio to ensure both limits are respected
+                    ratio = min(width_ratio, height_ratio)
+                    new_width = int(current_width * ratio)
+                    new_height = int(current_height * ratio)
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 elif width_px:
                     # Only width given - proportional resize
                     ratio = width_px / current_width
                     new_height = int(current_height * ratio)
-                    img = img.resize((width_px, new_height))
+                    img = img.resize((width_px, new_height), Image.Resampling.LANCZOS)
                 elif height_px:
                     # Only height given - proportional resize
                     ratio = height_px / current_height
                     new_width = int(current_width * ratio)
-                    img = img.resize((new_width, height_px))
+                    img = img.resize((new_width, height_px), Image.Resampling.LANCZOS)
 
             # En son, net ve keskin kenarlar için 1-bit'e çevir
             #img = img.convert("1")
@@ -405,14 +423,32 @@ class BitmapGenerator:
             
             # Create image from bytes
             img = Image.open(BytesIO(image_data))
+            
+            # Convert RGBA to RGB if needed (alpha channel'ı düzgün işle)
+            if img.mode == 'RGBA':
+                # Alpha channel'ı mask olarak kullan ve beyaz arka plan üzerine yapıştır
+                # Önce RGB'ye çevir (beyaz arka plan ile)
+                rgb_img = Image.new('RGB', img.size, (255, 255, 255))
+                rgb_img.paste(img, mask=img.split()[3])  # Alpha channel'ı mask olarak kullan
+                img = rgb_img
+            elif img.mode not in ('RGB', 'L', '1'):
+                # Diğer formatları RGB'ye çevir
+                img = img.convert('RGB')
 
-            # Resize only if valid dimensions are provided (önce resize, sonra 1-bit)
+            # Resize only if valid dimensions are provided, maintain aspect ratio within max limits
             if (width_px and width_px > 0) or (height_px and height_px > 0):
                 current_width, current_height = img.size
                 
                 if width_px and height_px and width_px > 0 and height_px > 0:
-                    # Both dimensions given - direct resize
-                    img = img.resize((width_px, height_px), Image.Resampling.LANCZOS)
+                    # Both dimensions given - treat as max limits, maintain aspect ratio
+                    # Calculate scaling ratios for both dimensions
+                    width_ratio = width_px / current_width
+                    height_ratio = height_px / current_height
+                    # Use the smaller ratio to ensure both limits are respected
+                    ratio = min(width_ratio, height_ratio)
+                    new_width = int(current_width * ratio)
+                    new_height = int(current_height * ratio)
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
                 elif width_px and width_px > 0:
                     # Only width given - proportional resize
                     ratio = width_px / current_width

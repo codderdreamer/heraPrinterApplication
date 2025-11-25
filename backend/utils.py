@@ -84,6 +84,10 @@ class Utils:
                     value_data["content"] = device_data["SERIAL_NUMBER"]
                 elif value_data["valueId"] == "EAN_NUMBER":
                     value_data["content"] = device_data["EAN_NUMBER"]
+                elif value_data["valueId"] == "MANUFACTURER":
+                    value_data["content"] = device_data["MANUFACTURER"]
+                elif value_data["valueId"] == "SITE_ID":
+                    value_data["content"] = device_data["SITE_ID"]
 
             for barcode_item in barcode_items:
                 if barcode_item["sira"] == 1:
