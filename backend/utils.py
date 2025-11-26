@@ -1,5 +1,6 @@
 import os
 import json
+import base64
 from backend.bitmapGenerator import BitmapGenerator
 from backend.tscPrinterModule import printer_manager
 
@@ -158,15 +159,17 @@ class Utils:
                 elif value_id == "PIN_CODE":
                     value_data["content"] = device_data.get("PIN_CODE", "")
                 elif value_data["valueId"] == "LOGO_NAME":
-                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    images_dir = os.path.join(project_root, "database", "images")
-                    image_path = os.path.join(images_dir, f"{data['LOGO_NAME']}.png")
-                    if os.path.exists(image_path):
-                        with open(image_path, "rb") as img_file:
-                            encoded = base64.b64encode(img_file.read()).decode("ascii")
-                        value_data["type"] = "image"
-                        value_data["content"] = ""
-                        value_data["imageFile"] = encoded
+                    logo_name = device_data.get("LOGO_NAME", "")
+                    if logo_name:
+                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                        images_dir = os.path.join(project_root, "database", "images")
+                        image_path = os.path.join(images_dir, f"{logo_name}.png")
+                        if os.path.exists(image_path):
+                            with open(image_path, "rb") as img_file:
+                                encoded = base64.b64encode(img_file.read()).decode("ascii")
+                            value_data["type"] = "image"
+                            value_data["content"] = ""
+                            value_data["imageFile"] = encoded
 
             pin_code = device_data.get("PIN_CODE", "")
             for barcode_item in barcode_items:
