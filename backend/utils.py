@@ -89,6 +89,20 @@ class Utils:
                     value_data["content"] = device_data["MANUFACTURER"]
                 elif value_data["valueId"] == "SITE_ID":
                     value_data["content"] = device_data["SITE_ID"]
+                elif value_data["valueId"] == "LOGO_NAME":
+                    logo_name = device_data.get("LOGO_NAME", "")
+                    if logo_name:
+                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                        images_dir = os.path.join(project_root, "database", "images")
+                        image_path = os.path.join(images_dir, f"{logo_name}.png")
+                        if os.path.exists(image_path):
+                            with open(image_path, "rb") as img_file:
+                                encoded = base64.b64encode(img_file.read()).decode("ascii")
+                            value_data["type"] = "image"
+                            value_data["content"] = ""
+                            value_data["imageFile"] = encoded
+                elif value_data["valueId"] == "OEM_COMPANY_NAME":
+                    value_data["content"] = device_data.get("OEM_COMPANY_NAME", "")
 
             for barcode_item in barcode_items:
                 if barcode_item["sira"] == 1:
@@ -170,6 +184,8 @@ class Utils:
                             value_data["type"] = "image"
                             value_data["content"] = ""
                             value_data["imageFile"] = encoded
+                elif value_data["valueId"] == "OEM_COMPANY_NAME":
+                    value_data["content"] = device_data.get("OEM_COMPANY_NAME", "")
 
             pin_code = device_data.get("PIN_CODE", "")
             for barcode_item in barcode_items:

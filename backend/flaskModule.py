@@ -498,7 +498,8 @@ class FlaskModule:
                             value_data["type"] = "text"
                             value_data["imageFile"] = ""
                             value_data["content"] = ""
-                    
+                    elif value_data["valueId"] == "OEM_COMPANY_NAME":
+                        value_data["content"] = data["OEM_COMPANY_NAME"]
                 # Barkod alanlarını seri numarası ile doldur
                 for barcode_item in barcode_items:
                     barcode_item["data"] = data["SERIAL_NUMBER"]
