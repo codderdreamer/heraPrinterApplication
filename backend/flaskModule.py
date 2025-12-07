@@ -316,75 +316,62 @@ class FlaskModule:
         def test_application_print():
             try:
                 printer_name = "ARKA MASA"
-
-                # Gelen JSON payload (testApplication -> heraPrinterApplication)
-                # 1) Doğrudan etiket alanları ile gelebilir:
-                # {
-                #   "PRODUCT_CODE": "...",
-                #   "MODEL_NUMBER": "...",
-                #   "SYSTEM": "...",
-                #   "RATED_VOLTAGE": "...",
-                #   "RATED_POWER": "...",
-                #   "OPERATING_TEMP": "...",
-                #   "MANUFACTURER": "...",
-                #   "BT_MAC": "...",
-                #   "LAN_MAC": "...",
-                #   "IMEI_NUMBER": "...",
-                #   "SITE_ID": "...",
-                #   "DATE_NUMBER": "...",
-                #   "SERIAL_NUMBER": "...",
-                #   "mid": "...",
-                #   "ip": "..."
-                # }
-                #
-                # 2) Veya SAP JSON'ı ile gelebilir (urunjsonformat_):
-                #    Bu durumda SAP alanları -> etiket alanlarına map edilir.
-
                 payload = request.get_json(silent=True) or {}
 
-                # Payload doğrudan etiket alanları ile GELMELİ (SAP JSON mapping burada yapılmıyor)
+                serial_number = payload.get("SERIAL_NUMBER") or ""
+                if not serial_number:
+                    return jsonify({"error": "Serial number is required"}), 400
+                
+                test_device = payload.get("TEST_DEVICE") or ""
+                if not test_device:
+                    return jsonify({"error": "Test device is required"}), 400
+
+                if test_device == 2:
+                    printer_name = "ARKA MASA"
+                elif test_device == 1:
+                    printer_name = "ÖN MASA"
+                else:
+                    return jsonify({"error": "Invalid test device"}), 400
+
+                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
+                if not sap_data:
+                    return jsonify({"error": "SAP data not found"}), 404
+
+                print(f"SAP data: {sap_data}")
+
                 data = {
-                    "PRODUCT_CODE": payload.get("PRODUCT_CODE") or "",
-                    "MODEL_NUMBER": payload.get("MODEL_NUMBER") or "",
-                    "SYSTEM": payload.get("SYSTEM") or "",
-                    "RATED_VOLTAGE": payload.get("RATED_VOLTAGE") or "",
-                    "RATED_POWER": payload.get("RATED_POWER") or "",
-                    "OPERATING_TEMP": payload.get("OPERATING_TEMP") or "",
-                    "MANUFACTURER": payload.get("MANUFACTURER") or "",
-                    "BT_MAC": payload.get("BT_MAC") or "",
-                    "LAN_MAC": payload.get("LAN_MAC") or "",
-                    "IMEI_NUMBER": payload.get("IMEI_NUMBER") or "",
-                    "SITE_ID": payload.get("SITE_ID") or "",
-                    "DATE_NUMBER": payload.get("DATE_NUMBER") or "",
-                    "SERIAL_NUMBER": payload.get("SERIAL_NUMBER") or "",
-                    "BODY_COLOR": payload.get("BODY_COLOR") or "",
-                    "EAN_NUMBER": payload.get("EAN_NUMBER") or "",
-                    "mid": payload.get("mid") or False,
-                    "mid_year": payload.get("mid_year") or "",
-                    "mid_lab": payload.get("mid_lab") or "",
-                    "ip": payload.get("ip") or "",
-                    "BT_NAME": payload.get("BT_NAME") or "",
-                    "PIN_CODE": payload.get("PIN_CODE") or "",
-                    "LOGO_NAME": payload.get("LOGO_NAME") or "",
-                    "OEM_COMPANY_NAME": payload.get("OEM_COMPANY_NAME") or ""
+                    "PRODUCT_CODE": sap_data.get("PRODUCT_CODE") or "",
+                    "MODEL_NUMBER": sap_data.get("MODEL_NUMBER") or "",
+                    "SYSTEM": sap_data.get("SYSTEM") or "",
+                    "RATED_VOLTAGE": sap_data.get("RATED_VOLTAGE") or "",
+                    "RATED_POWER": sap_data.get("RATED_POWER") or "",
+                    "OPERATING_TEMP": sap_data.get("OPERATING_TEMP") or "",
+                    "MANUFACTURER": sap_data.get("MANUFACTURER") or "",
+                    "BT_MAC": sap_data.get("BT_MAC") or "",
+                    "LAN_MAC": sap_data.get("LAN_MAC") or "",
+                    "IMEI_NUMBER": sap_data.get("IMEI_NUMBER") or "",
+                    "SITE_ID": sap_data.get("SITE_ID") or "",
+                    "DATE_NUMBER": datetime.now().strftime("%d/%m/%Y"),
+                    "SERIAL_NUMBER": serial_number,
+                    "BODY_COLOR": sap_data.get("BODY_COLOR") or "",
+                    "EAN_NUMBER": sap_data.get("EAN_NUMBER") or "",
+                    "mid": sap_data.get("mid") or False,
+                    "mid_year": sap_data.get("mid_year") or "",
+                    "mid_lab": sap_data.get("mid_lab") or "",
+                    "ip": sap_data.get("IP") or "",
+                    "BT_NAME": sap_data.get("BT_NAME") or "",
+                    "PIN_CODE": sap_data.get("PIN_CODE") or "",
+                    "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
+                    "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or ""
                 }
 
-                self.application.utils.save_device_data(data["SERIAL_NUMBER"], data)
-
                 ip = self.application.printers.get_printer_ip_by_name(printer_name)
-                print(f"Printer IP: {ip}")
                 settings_data = self.application.printers.get_printer_data_by_ip(ip)
-                print(f"Settings data: {settings_data}")
                 settings_data_json = json.loads(settings_data)
                 text_items = settings_data_json.get('textItems', [])
                 value_items = settings_data_json.get('valueItems', [])
                 icon_items = settings_data_json.get('iconItems', [])
                 barcode_items = settings_data_json.get('barcodeItems', [])
-                
-                print(f"Text items: {text_items}")
-                print(f"Value items: {value_items}")
-                print(f"Icon items: {icon_items}")
-                print(f"Barcode items: {barcode_items}")
                 
                 settings_data = {
                     "textItems": text_items,
@@ -536,9 +523,20 @@ class FlaskModule:
         def barcode_scanner_print():
             try:
                 data = request.get_json()
+                serial_number = data.get('SERIAL_NUMBER', "")
+                print(f"/api/barcodeScanner/print Serial number: {serial_number}")
+                if not serial_number:
+                    return jsonify({"error": "Serial number not found"}), 404
+                    return False
 
-                self.application.utils.print_paket(data)
-                self.application.utils.print_qr(data)
+                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
+                if not sap_data:
+                    return jsonify({"error": "SAP data not found"}), 404
+                print(f"SAP data: {sap_data}")
+                self.application.utils.print_paket(serial_number, sap_data)
+                pin_code = sap_data.get("PIN_CODE", "")
+                if pin_code:
+                    self.application.utils.print_qr(serial_number, sap_data)
 
                 return jsonify({"message": "Barcode printed successfully"})
             except Exception as e:

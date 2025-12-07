@@ -1,13 +1,173 @@
 import os
 import json
 import base64
+import requests
+import urllib3
+import time
 from backend.bitmapGenerator import BitmapGenerator
 from backend.tscPrinterModule import printer_manager
+
+# Disable SSL warnings for self-signed certificates
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class Utils:
     def __init__(self, application):
         self.application = application
+        self.sap_base_url = "https://10.254.240.20:50000/b1s/v1"
+        self.company_db = "HERATEST03"  # yusufcana sorulacak
+        self.sap_username = "manager"  # yusufcana sorulacak
+        self.sap_password = "3944"  # yusufcana sorulacak
+
+    def sap_login(self):
+        try:
+            login_payload = {
+                    "CompanyDB": self.company_db,
+                    "Password": self.sap_password,
+                    "UserName": self.sap_username
+                }
+            
+            headers = {"Content-Type": "application/json"}
+            
+            login_response = requests.post(
+                f"{self.sap_base_url}/Login",
+                headers=headers,
+                json=login_payload,
+                verify=False
+            )
+
+            if login_response.status_code == 200:
+                print(f"Login successful: {login_response.json()}")
+                return login_response.json().get("SessionId")
+            else:
+                print(f"Login failed: {login_response.status_code} - {login_response.text}")
+                return None
+
+        except Exception as e:
+            print(f"sap_login error: {e}")
+            return None
+
+    def get_sap_device_knowledge(self, serial_number):
+        """
+        Serial number ile SAP'den tüm cihaz bilgilerini okur.
+        
+        Args:
+            serial_number (str): Cihaz seri numarası
+            
+        Returns:
+            dict: Cihaz bilgileri veya None (hata durumunda)
+        """
+        try:
+            session_id = self.sap_login()
+            if not session_id:
+                print("SAP login failed")
+                return None
+
+            # 2. SerialNumberDetails'i al
+            headers = {
+                "Content-Type": "application/json",
+                "Cookie": f"B1SESSION={session_id}"
+            }
+            
+            params = {
+                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P",
+                "$filter": f"SerialNumber eq '{serial_number}'"
+            }
+            
+            serial_response = requests.get(
+                f"{self.sap_base_url}/SerialNumberDetails",
+                headers=headers,
+                params=params,
+                verify=False
+            )
+            
+            if serial_response.status_code != 200:
+                print(f"SerialNumberDetails request failed: {serial_response.status_code} - {serial_response.text}")
+                return None
+            
+            serial_data = serial_response.json()
+            if "value" not in serial_data or len(serial_data["value"]) == 0:
+                print(f"No data found for serial number: {serial_number}")
+                return None
+            
+            serial_info = serial_data["value"][0]
+            item_code = serial_info.get("ItemCode")
+            doc_entry = serial_info.get("DocEntry")
+            
+            if not item_code:
+                print("ItemCode bulunamadı")
+                return None
+            
+            print(f"Found ItemCode: {item_code}, DocEntry: {doc_entry}")
+            
+            # 3. Items bilgilerini al
+            params = {
+                "$select": "ItemCode,BarCode,ItemName,ForeignName,U_Model,U_RaletedVoltage,U_LogoName,U_OemCompanyName,U_RaletedPower,U_BodyColor,U_operating_temp,U_manufacturer,U_baglanti_adresi,U_ip_info,U_System",
+                "$filter": f"ItemCode eq '{item_code}'"
+            }
+            
+            items_response = requests.get(
+                f"{self.sap_base_url}/Items",
+                headers=headers,
+                params=params,
+                verify=False
+            )
+            
+            if items_response.status_code != 200:
+                print(f"Items request failed: {items_response.status_code} - {items_response.text}")
+                # SerialNumberDetails bilgilerini döndür
+                return serial_info
+            
+            items_data = items_response.json()
+            if "value" not in items_data or len(items_data["value"]) == 0:
+                print(f"No item data found for ItemCode: {item_code}")
+                return serial_info
+            
+            item_info = items_data["value"][0]
+            
+            # 4. Tüm bilgileri birleştir
+            device_knowledge = {
+                # SerialNumberDetails bilgileri
+                "DocEntry": doc_entry,
+                "PRODUCT_CODE": item_code,
+                "ItemDescription": serial_info.get("ItemDescription"),
+                "MfrSerialNo": serial_info.get("MfrSerialNo"),
+                "SerialNumber": serial_info.get("SerialNumber"),
+                "SERIAL_NUMBER": serial_number,
+                "IMEI_NUMBER": serial_info.get("U_4GImei"),
+                "BT_MAC": serial_info.get("U_BluetoothMAC"),
+                "LAN_MAC": serial_info.get("U_EthernetMAC"),
+                "BT_NAME": serial_info.get("U_CPID"),
+                "U_MRFID": serial_info.get("U_MRFID"),
+                "U_KRFID": serial_info.get("U_KRFID"),
+                "U_KRFID1": serial_info.get("U_KRFID1"),
+                "U_AESKey": serial_info.get("U_AESKey"),
+                "U_AESIV": serial_info.get("U_AESIV"),
+                "PIN_CODE": serial_info.get("U_BLE_A_P"),
+                
+                # Items bilgileri
+                "EAN_NUMBER": item_info.get("BarCode"),
+                "ItemName": item_info.get("ItemName"),
+                "ForeignName": item_info.get("ForeignName"),
+                "MODEL_NUMBER": item_info.get("U_Model"),
+                "RATED_VOLTAGE": item_info.get("U_RaletedVoltage"),
+                "LOGO_NAME": item_info.get("U_LogoName"),
+                "OEM_COMPANY_NAME": item_info.get("U_OemCompanyName"),
+                "RATED_POWER": item_info.get("U_RaletedPower"),
+                "BODY_COLOR": item_info.get("U_BodyColor"),
+                "OPERATING_TEMP": item_info.get("U_operating_temp"),
+                "MANUFACTURER": item_info.get("U_manufacturer"),
+                "SITE_ID": item_info.get("U_baglanti_adresi"),
+                "IP": item_info.get("U_ip_info"),
+                "SYSTEM": item_info.get("U_System")
+            }
+            
+            print(f"Device knowledge retrieved successfully for serial: {serial_number}")
+            return device_knowledge
+            
+        except Exception as e:
+            print(f"get_sap_device_knowledge error: {e}")
+            return None
 
     def save_device_data(self, serial_number, data):
         try:
@@ -43,16 +203,8 @@ class Utils:
             print(f"get_device_data error: {e}")
             return None
 
-    def print_paket(self, data):
+    def print_paket(self, serial_number, sap_data):
         try:
-            serial_number = data.get('SERIAL_NUMBER')
-            if not serial_number:
-                return False
-
-            device_data = self.application.utils.get_device_data(serial_number)
-            if not device_data:
-                return False
-
             printer_name = "PAKET"
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
             settings_data = self.application.printers.get_printer_data_by_ip(ip)
@@ -72,25 +224,25 @@ class Utils:
 
             for value_data in value_items:
                 if value_data["valueId"] == "PRODUCT_CODE":
-                    value_data["content"] = device_data["PRODUCT_CODE"]
+                    value_data["content"] = sap_data.get("PRODUCT_CODE", "")
                 elif value_data["valueId"] == "MODEL_NUMBER":
-                    value_data["content"] = device_data["MODEL_NUMBER"]
+                    value_data["content"] = sap_data.get("MODEL_NUMBER", "")
                 elif value_data["valueId"] == "SYSTEM_ID":
-                    value_data["content"] = device_data["SYSTEM"]
+                    value_data["content"] = sap_data.get("SYSTEM", "")
                 elif value_data["valueId"] == "RATED_VOLTAGE":
-                    value_data["content"] = device_data["RATED_VOLTAGE"]
+                    value_data["content"] = sap_data.get("RATED_VOLTAGE", "")
                 elif value_data["valueId"] == "BODY_COLOR":
-                    value_data["content"] = device_data["BODY_COLOR"]
+                    value_data["content"] = sap_data.get("BODY_COLOR", "")
                 elif value_data["valueId"] == "SERIAL_NUMBER":
-                    value_data["content"] = device_data["SERIAL_NUMBER"]
+                    value_data["content"] = sap_data.get("SERIAL_NUMBER", "")
                 elif value_data["valueId"] == "EAN_NUMBER":
-                    value_data["content"] = device_data["EAN_NUMBER"]
+                    value_data["content"] = sap_data.get("EAN_NUMBER", "")
                 elif value_data["valueId"] == "MANUFACTURER":
-                    value_data["content"] = device_data["MANUFACTURER"]
+                    value_data["content"] = sap_data.get("MANUFACTURER", "")
                 elif value_data["valueId"] == "SITE_ID":
-                    value_data["content"] = device_data["SITE_ID"]
+                    value_data["content"] = sap_data.get("SITE_ID", "")
                 elif value_data["valueId"] == "LOGO_NAME":
-                    logo_name = device_data.get("LOGO_NAME", "")
+                    logo_name = sap_data.get("LOGO_NAME", "")
                     if logo_name:
                         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                         images_dir = os.path.join(project_root, "database", "images")
@@ -102,13 +254,13 @@ class Utils:
                             value_data["content"] = ""
                             value_data["imageFile"] = encoded
                 elif value_data["valueId"] == "OEM_COMPANY_NAME":
-                    value_data["content"] = device_data.get("OEM_COMPANY_NAME", "")
+                    value_data["content"] = sap_data.get("OEM_COMPANY_NAME", "")
 
             for barcode_item in barcode_items:
                 if barcode_item["sira"] == 1:
-                    barcode_item["data"] = device_data["SERIAL_NUMBER"]
+                    barcode_item["data"] = sap_data.get("SERIAL_NUMBER", "")
                 elif barcode_item["sira"] == 2:
-                    barcode_item["data"] = device_data["EAN_NUMBER"]
+                    barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
 
             printers = self.application.printers.search_printers_by_name(printer_name)
             width = printers[0]["width"]
@@ -135,16 +287,8 @@ class Utils:
         except Exception as e:
             print(f"print_paket error: {e}")
 
-    def print_qr(self, data):
+    def print_qr(self, serial_number, sap_data):
         try:
-            serial_number = data.get('SERIAL_NUMBER')
-            if not serial_number:
-                return False
-
-            device_data = self.application.utils.get_device_data(serial_number)
-            if not device_data:
-                return False
-
             printer_name = "QR KOD"
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
             settings_data = self.application.printers.get_printer_data_by_ip(ip)
@@ -165,15 +309,15 @@ class Utils:
             for value_data in value_items:
                 value_id = value_data.get("valueId")
                 if value_id == "PRODUCT_CODE":
-                    value_data["content"] = device_data.get("PRODUCT_CODE", "")
+                    value_data["content"] = sap_data.get("PRODUCT_CODE", "")
                 elif value_id == "SERIAL_NUMBER":
-                    value_data["content"] = device_data.get("SERIAL_NUMBER", serial_number)
+                    value_data["content"] = sap_data.get("SERIAL_NUMBER", "")
                 elif value_id == "BT_NAME":
-                    value_data["content"] = device_data.get("BT_NAME", "")
+                    value_data["content"] = sap_data.get("BT_NAME", "")
                 elif value_id == "PIN_CODE":
-                    value_data["content"] = device_data.get("PIN_CODE", "")
+                    value_data["content"] = sap_data.get("PIN_CODE", "")
                 elif value_data["valueId"] == "LOGO_NAME":
-                    logo_name = device_data.get("LOGO_NAME", "")
+                    logo_name = sap_data.get("LOGO_NAME", "")
                     if logo_name:
                         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                         images_dir = os.path.join(project_root, "database", "images")
@@ -185,9 +329,9 @@ class Utils:
                             value_data["content"] = ""
                             value_data["imageFile"] = encoded
                 elif value_data["valueId"] == "OEM_COMPANY_NAME":
-                    value_data["content"] = device_data.get("OEM_COMPANY_NAME", "")
+                    value_data["content"] = sap_data.get("OEM_COMPANY_NAME", "")
 
-            pin_code = device_data.get("PIN_CODE", "")
+            pin_code = sap_data.get("PIN_CODE", "")
             for barcode_item in barcode_items:
                 barcode_item["data"] = pin_code
 
