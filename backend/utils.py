@@ -15,9 +15,9 @@ class Utils:
     def __init__(self, application):
         self.application = application
         self.sap_base_url = "https://10.254.240.20:50000/b1s/v1"
-        self.company_db = "HERATEST03"  # yusufcana sorulacak
+        self.company_db = "HERA"  # yusufcana sorulacak
         self.sap_username = "manager"  # yusufcana sorulacak
-        self.sap_password = "3944"  # yusufcana sorulacak
+        self.sap_password = "1302"  # yusufcana sorulacak
 
     def sap_login(self):
         try:
