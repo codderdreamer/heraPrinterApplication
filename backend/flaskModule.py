@@ -5,6 +5,7 @@ import os
 import json
 import sys
 import base64
+from datetime import datetime
 
 # Import with PyInstaller compatibility
 try:
