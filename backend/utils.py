@@ -73,6 +73,8 @@ class Utils:
                 "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P",
                 "$filter": f"SerialNumber eq '{serial_number}'"
             }
+
+            print(f"SerialNumberDetails params: {params}")
             
             serial_response = requests.get(
                 f"{self.sap_base_url}/SerialNumberDetails",
@@ -80,6 +82,8 @@ class Utils:
                 params=params,
                 verify=False
             )
+
+            print(f"SerialNumberDetails response: {serial_response.text}")
             
             if serial_response.status_code != 200:
                 print(f"SerialNumberDetails request failed: {serial_response.status_code} - {serial_response.text}")
