@@ -30,6 +30,9 @@ interface ValueItem {
   imageFile?: string;  // Base64 encoded image data
   imageWidth?: number;  // Image genişliği
   imageHeight?: number; // Image yüksekliği
+  width?: number;  // Text için genişlik (pixel)
+  height?: number; // Text için yükseklik (pixel)
+  textAlign?: 'left' | 'center' | 'right'; // Text hizalama
 }
 
 interface IconItem {
@@ -314,7 +317,10 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       fontSize: 12,
       fontFamily: 'Arial',
       rotation: 0,  // Default 0° (Normal)
-      type: 'text'  // Default olarak text
+      type: 'text',  // Default olarak text
+      width: 0,  // Default 0 = otomatik genişlik
+      height: 0, // Default 0 = otomatik yükseklik
+      textAlign: 'left'  // Default sola yasla
     };
     console.log('Adding new value:', newValue);
     setValueItems(prev => {
@@ -715,6 +721,46 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
 
                 {valueItem.type === 'text' && (
                   <>
+                    <div className="form-group">
+                      <label>Genişlik (Width):</label>
+                      <input
+                        type="number"
+                        value={valueItem.width || 0}
+                        onChange={(e) => updateValueItem(valueItem.id, 'width', parseInt(e.target.value) || 0)}
+                        min="0"
+                        placeholder="0 = Otomatik"
+                      />
+                      <small style={{color: '#666', fontSize: '0.8rem'}}>
+                        0 = Otomatik genişlik, diğer değerler pixel cinsinden
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label>Yükseklik (Height):</label>
+                      <input
+                        type="number"
+                        value={valueItem.height || 0}
+                        onChange={(e) => updateValueItem(valueItem.id, 'height', parseInt(e.target.value) || 0)}
+                        min="0"
+                        placeholder="0 = Otomatik"
+                      />
+                      <small style={{color: '#666', fontSize: '0.8rem'}}>
+                        0 = Otomatik yükseklik, diğer değerler pixel cinsinden
+                      </small>
+                    </div>
+                    <div className="form-group">
+                      <label>Hizalama (Text Align):</label>
+                      <select
+                        value={valueItem.textAlign || 'left'}
+                        onChange={(e) => updateValueItem(valueItem.id, 'textAlign', e.target.value as 'left' | 'center' | 'right')}
+                      >
+                        <option value="left">Sola Yasla</option>
+                        <option value="center">Ortala</option>
+                        <option value="right">Sağa Yasla</option>
+                      </select>
+                      <small style={{color: '#666', fontSize: '0.8rem'}}>
+                        Text'i belirtilen genişlik içinde hizalar
+                      </small>
+                    </div>
                     <div className="form-group">
                       <label>Font Boyutu:</label>
                       <input

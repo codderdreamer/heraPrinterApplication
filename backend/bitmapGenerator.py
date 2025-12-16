@@ -9,6 +9,7 @@ import platform
 import base64
 from pathlib import Path
 from typing import List, Dict, Any
+import textwrap
 
 class BitmapGenerator:
     """Bitmap generation class based on test.py example"""
@@ -189,8 +190,8 @@ class BitmapGenerator:
             print(f"Error setting label scale: {e}")
             return (0, 0, 0)
 
-    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_family: str = "Arial", rotation: int = 0):
-        """Add text to bitmap at specified coordinates with rotation"""
+    def set_text(self, text: str, x: int, y: int, font_size_px: int, font_family: str = "Arial", rotation: int = 0, width: int = None, height: int = None, text_align: str = 'left'):
+        """Add text to bitmap at specified coordinates with rotation, width, height, alignment and text wrapping"""
         try:
             font = self._load_font(font_family, font_size_px)
 
@@ -201,50 +202,129 @@ class BitmapGenerator:
                 self.text_layer = Image.new("RGBA", self.img.size, (0, 0, 0, 0))
                 self.text_draw = ImageDraw.Draw(self.text_layer)
             
-            if rotation == 0:
-                # Normal text (no rotation)
-                self.text_draw.text((x, y), text, font=font, fill=(0, 0, 0, 255))  # Black text with transparency
-                bbox = self.text_draw.textbbox((x, y), text, font=font)
-            else:
-                # Get text bounding box to calculate center
-                bbox = self.text_draw.textbbox((x, y), text, font=font)
-                text_width = bbox[2] - bbox[0]
-                text_height = bbox[3] - bbox[1]
-                
-                # Create a temporary image just for the text
-                # Extra padding is added to avoid clipping when rotated (especially at 90/270 degrees)
-                padding = 40
-                temp_img = Image.new(
-                    "RGBA",
-                    (text_width + padding, text_height + padding),
-                    (0, 0, 0, 0)
-                )  # Transparent background
-                temp_draw = ImageDraw.Draw(temp_img)
-                
-                # Draw text on temporary image (centered)
-                temp_x = (temp_img.width - text_width) // 2
-                temp_y = (temp_img.height - text_height) // 2
-                temp_draw.text((temp_x, temp_y), text, font=font, fill=(0, 0, 0, 255))  # Black text with transparency
-                
-                # Rotate the temporary image around its center
-                # expand=True => canvas genişler, metnin köşeleri kesilmez
-                rotated_img = temp_img.rotate(rotation, expand=True, fillcolor=(0, 0, 0, 0))
-                
-                # Calculate the position to paste the rotated text
-                # So that the center of the rotated text is at (x, y)
-                paste_x = x - rotated_img.width // 2
-                paste_y = y - rotated_img.height // 2
-                
-                # Paste the rotated text onto the main image
-                self.text_layer.paste(rotated_img, (paste_x, paste_y), rotated_img)
-                
-                # Update bounding box for rotated text
-                bbox = (paste_x, paste_y, paste_x + rotated_img.width, paste_y + rotated_img.height)
+            # Get single line text height for line spacing calculation
+            test_bbox = self.text_draw.textbbox((0, 0), "Ag", font=font)
+            line_height = test_bbox[3] - test_bbox[1]
             
-            print(f"Text '{text}' with rotation {rotation}° at ({x}, {y}) bbox: {bbox}")
+            # If width is specified, wrap text to fit within that width
+            lines = [text]  # Default: single line
+            if width and width > 0:
+                # Wrap text word by word to fit within specified width
+                words = text.split()
+                if not words:
+                    lines = [text]
+                else:
+                    lines = []
+                    current_line = ""
+                    
+                    for word in words:
+                        # Test if adding this word to current line would exceed width
+                        test_line = current_line + (" " if current_line else "") + word
+                        test_bbox = self.text_draw.textbbox((0, 0), test_line, font=font)
+                        test_width = test_bbox[2] - test_bbox[0]
+                        
+                        if test_width <= width or not current_line:
+                            # Word fits or it's the first word (must add it even if too long)
+                            current_line = test_line
+                        else:
+                            # Current line is full, start a new line
+                            if current_line:
+                                lines.append(current_line)
+                            current_line = word
+                    
+                    # Add the last line
+                    if current_line:
+                        lines.append(current_line)
+                    
+                    if not lines:
+                        lines = [text]
+            
+            # Calculate total text height (all lines)
+            total_text_height = line_height * len(lines)
+            
+            # If height is specified, calculate how many lines fit and align to bottom
+            lines_to_draw = lines
+            if height and height > 0:
+                # Calculate how many lines fit within height
+                max_lines = max(1, height // line_height)
+                if len(lines) > max_lines:
+                    # Only draw the last N lines that fit
+                    lines_to_draw = lines[-max_lines:]
+                # Calculate starting Y position to align to bottom
+                actual_y = y + height - (len(lines_to_draw) * line_height)
+            else:
+                actual_y = y
+                lines_to_draw = lines
+            
+            # Draw each line
+            min_x = x
+            max_x = x
+            min_y = actual_y
+            max_y = actual_y
+            
+            for line_idx, line in enumerate(lines_to_draw):
+                if not line.strip():  # Skip empty lines
+                    continue
+                
+                # Get line width
+                line_bbox = self.text_draw.textbbox((0, 0), line, font=font)
+                line_width = line_bbox[2] - line_bbox[0]
+                
+                # Calculate X position based on alignment
+                actual_x = x
+                if width and width > 0:
+                    if text_align == 'center':
+                        actual_x = x + (width - line_width) // 2
+                    elif text_align == 'right':
+                        actual_x = x + width - line_width
+                    # 'left' is default, so actual_x = x
+                
+                # Calculate Y position for this line
+                line_y = actual_y + (line_idx * line_height)
+                
+                # Draw the line
+                if rotation == 0:
+                    self.text_draw.text((actual_x, line_y), line, font=font, fill=(0, 0, 0, 255))
+                    line_bbox = self.text_draw.textbbox((actual_x, line_y), line, font=font)
+                else:
+                    # For rotated text, we need to handle each line separately
+                    # Create a temporary image for this line
+                    padding = 40
+                    temp_img = Image.new(
+                        "RGBA",
+                        (line_width + padding, line_height + padding),
+                        (0, 0, 0, 0)
+                    )
+                    temp_draw = ImageDraw.Draw(temp_img)
+                    temp_x = (temp_img.width - line_width) // 2
+                    temp_y = (temp_img.height - line_height) // 2
+                    temp_draw.text((temp_x, temp_y), line, font=font, fill=(0, 0, 0, 255))
+                    
+                    # Rotate the line
+                    rotated_img = temp_img.rotate(rotation, expand=True, fillcolor=(0, 0, 0, 0))
+                    
+                    # Calculate position to paste
+                    paste_x = actual_x - rotated_img.width // 2
+                    paste_y = line_y - rotated_img.height // 2
+                    
+                    # Paste the rotated line
+                    self.text_layer.paste(rotated_img, (paste_x, paste_y), rotated_img)
+                    line_bbox = (paste_x, paste_y, paste_x + rotated_img.width, paste_y + rotated_img.height)
+                
+                # Update bounding box
+                min_x = min(min_x, line_bbox[0])
+                max_x = max(max_x, line_bbox[2])
+                min_y = min(min_y, line_bbox[1])
+                max_y = max(max_y, line_bbox[3])
+            
+            bbox = (min_x, min_y, max_x, max_y)
+            
+            print(f"Text '{text}' with rotation {rotation}° at ({x}, {y}) bbox: {bbox}, width={width}, height={height}, align={text_align}, lines={len(lines)}")
             return bbox
         except Exception as e:
             print(f"Error setting text: {e}")
+            import traceback
+            traceback.print_exc()
             return (x, y, x, y)
 
     def set_barcode(self, data: str, x: int, y: int, barcode_type: str = "code128", width_px: int = None, height_px: int = None):
@@ -572,13 +652,23 @@ class BitmapGenerator:
                 value_type = value_item.get("type", "text")
                 
                 if value_type == "text" and value_item.get("content"):
+                    width = value_item.get("width")
+                    height = value_item.get("height")
+                    text_align = value_item.get("textAlign", "left")
+                    # If width/height is 0 or None, pass None to use automatic sizing
+                    width = width if width and width > 0 else None
+                    height = height if height and height > 0 else None
+                    
                     self.set_text(
                         value_item["content"],
                         value_item.get("x", 0),
                         value_item.get("y", 0),
                         value_item.get("fontSize", 12),
                         value_item.get("fontFamily", "Arial"),
-                        value_item.get("rotation", 0)
+                        value_item.get("rotation", 0),
+                        width,
+                        height,
+                        text_align
                     )
                 elif value_type == "image" and value_item.get("imageFile"):
                     print(f"Processing value image item: x={value_item.get('x', 0)}, y={value_item.get('y', 0)}, "
