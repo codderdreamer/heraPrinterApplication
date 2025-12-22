@@ -492,6 +492,16 @@ class FlaskModule:
                 for barcode_item in barcode_items:
                     barcode_item["data"] = data["SERIAL_NUMBER"]
 
+                # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa textItems içindeki text 18, 19, 20, 21, 22, 23'ü filtrele
+                bt_mac_exists = bool(data.get("BT_MAC") and data["BT_MAC"].strip())
+                lan_mac_exists = bool(data.get("LAN_MAC") and data["LAN_MAC"].strip())
+                imei_exists = bool(data.get("IMEI_NUMBER") and data["IMEI_NUMBER"].strip())
+                
+                # Eğer bu değerlerden herhangi biri yoksa, ilgili text item'ları filtrele
+                if not bt_mac_exists or not lan_mac_exists or not imei_exists:
+                    # Filtrelenecek text item id'leri
+                    text_ids_to_filter = [18, 19, 20, 21, 22, 23]
+                    text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
 
                 printers = self.application.printers.search_printers_by_name(printer_name)
                 width = printers[0]["width"]
