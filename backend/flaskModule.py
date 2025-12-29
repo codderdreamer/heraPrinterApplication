@@ -363,7 +363,9 @@ class FlaskModule:
                     "BT_NAME": sap_data.get("BT_NAME") or "",
                     "PIN_CODE": sap_data.get("PIN_CODE") or "",
                     "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
-                    "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or ""
+                    "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
+                    "OemProductCode": sap_data.get("OemProductCode") or "",
+                    "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
                 }
 
                 ip = self.application.printers.get_printer_ip_by_name(printer_name)
@@ -384,39 +386,39 @@ class FlaskModule:
                 # Değer alanlarını doldur
                 for value_data in value_items:
                     if value_data["valueId"] == "SERIAL_NUMBER":
-                        value_data["content"] = data["SERIAL_NUMBER"]
+                        value_data["content"] = data.get("SERIAL_NUMBER", "")
                     elif value_data["valueId"] == "DATE_NUMBER":
-                        value_data["content"] = data["DATE_NUMBER"]
+                        value_data["content"] = data.get("DATE_NUMBER", "")
                     elif value_data["valueId"] == "SITE_ID":
-                        value_data["content"] = data["SITE_ID"]
+                        value_data["content"] = data.get("SITE_ID", "")
                     elif value_data["valueId"] == "IMEI_NUMBER":
-                        value_data["content"] = data["IMEI_NUMBER"]
+                        value_data["content"] = data.get("IMEI_NUMBER", "")
                     elif value_data["valueId"] == "LAN_MAC":
-                        value_data["content"] = (data["LAN_MAC"] or "").upper()
+                        value_data["content"] = (data.get("LAN_MAC", "") or "").upper()
                     elif value_data["valueId"] == "BT_MAC":
-                        value_data["content"] = (data["BT_MAC"] or "").upper()
+                        value_data["content"] = (data.get("BT_MAC", "") or "").upper()
                     elif value_data["valueId"] == "PRODUCT_CODE":
-                        value_data["content"] = data["PRODUCT_CODE"]
+                        value_data["content"] = data.get("PRODUCT_CODE", "")
                     elif value_data["valueId"] == "MODEL_NUMBER":
-                        value_data["content"] = data["MODEL_NUMBER"]
+                        value_data["content"] = data.get("MODEL_NUMBER", "")
                     elif value_data["valueId"] == "SYSTEM":
-                        value_data["content"] = data["SYSTEM"]
+                        value_data["content"] = data.get("SYSTEM", "")
                     elif value_data["valueId"] == "RATED_VOLTAGE":
-                        value_data["content"] = data["RATED_VOLTAGE"]
+                        value_data["content"] = data.get("RATED_VOLTAGE", "")
                     elif value_data["valueId"] == "RATED_POWER":
-                        value_data["content"] = data["RATED_POWER"]
+                        value_data["content"] = data.get("RATED_POWER", "")
                     elif value_data["valueId"] == "OPERATING_TEMP":
-                        value_data["content"] = data["OPERATING_TEMP"]
+                        value_data["content"] = data.get("OPERATING_TEMP", "")
                     elif value_data["valueId"] == "MANUFACTURER":
-                        value_data["content"] = data["MANUFACTURER"]
+                        value_data["content"] = data.get("MANUFACTURER", "")
                     elif value_data["valueId"] == "BT_NAME":
-                        value_data["content"] = data["BT_NAME"]
+                        value_data["content"] = data.get("BT_NAME", "")
                     elif value_data["valueId"] == "PIN_CODE":
-                        value_data["content"] = data["PIN_CODE"]
+                        value_data["content"] = data.get("PIN_CODE", "")
                     elif value_data["valueId"] == "LOGO_NAME":
                         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                         images_dir = os.path.join(project_root, "database", "images")
-                        image_path = os.path.join(images_dir, f"{data['LOGO_NAME']}.png")
+                        image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
                         if os.path.exists(image_path):
                             with open(image_path, "rb") as img_file:
                                 encoded = base64.b64encode(img_file.read()).decode("ascii")
@@ -424,10 +426,10 @@ class FlaskModule:
                             value_data["content"] = ""
                             value_data["imageFile"] = encoded
                     elif value_data["valueId"] == "mid_lab":
-                        value_data["content"] = data["mid_lab"]
+                        value_data["content"] = data.get("mid_lab", "")
                     elif value_data["valueId"] == "IP":
                         # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
-                        ip_value = data["ip"]
+                        ip_value = data.get("ip", "")
                         if ip_value:
                             try:
                                 # Proje kökü: backend klasörünün bir üstü
@@ -487,15 +489,19 @@ class FlaskModule:
                             value_data["imageFile"] = ""
                             value_data["content"] = ""
                     elif value_data["valueId"] == "OEM_COMPANY_NAME":
-                        value_data["content"] = data["OEM_COMPANY_NAME"]
+                        value_data["content"] = data.get("OEM_COMPANY_NAME", "")
+                    elif value_data["valueId"] == "OemProductCode":
+                        value_data["content"] = data.get("OemProductCode", "")
+                    elif value_data["valueId"] == "OemProductCodeDefinition":
+                        value_data["content"] = data.get("OemProductCodeDefinition", "")
                 # Barkod alanlarını seri numarası ile doldur
                 for barcode_item in barcode_items:
-                    barcode_item["data"] = data["SERIAL_NUMBER"]
+                    barcode_item["data"] = data.get("SERIAL_NUMBER", "")
 
                 # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa textItems içindeki text 18, 19, 20, 21, 22, 23'ü filtrele
-                bt_mac_exists = bool(data.get("BT_MAC") and data["BT_MAC"].strip())
-                lan_mac_exists = bool(data.get("LAN_MAC") and data["LAN_MAC"].strip())
-                imei_exists = bool(data.get("IMEI_NUMBER") and data["IMEI_NUMBER"].strip())
+                bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
+                lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
+                imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
                 
                 # Eğer bu değerlerden herhangi biri yoksa, ilgili text item'ları filtrele
                 if not bt_mac_exists or not lan_mac_exists or not imei_exists:

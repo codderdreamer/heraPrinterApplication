@@ -70,7 +70,7 @@ class Utils:
             }
             
             params = {
-                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P",
+                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P,OemProductCode,OemProductCodeDefinition",
                 "$filter": f"SerialNumber eq '{serial_number}'"
             }
 
@@ -148,7 +148,9 @@ class Utils:
                 "U_AESKey": serial_info.get("U_AESKey"),
                 "U_AESIV": serial_info.get("U_AESIV"),
                 "PIN_CODE": serial_info.get("U_BLE_A_P"),
-                
+                "OemProductCode": serial_info.get("OemProductCode"),
+                "OemProductCodeDefinition": serial_info.get("OemProductCodeDefinition"),
+
                 # Items bilgileri
                 "EAN_NUMBER": item_info.get("BarCode"),
                 "ItemName": item_info.get("ItemName"),
@@ -259,12 +261,19 @@ class Utils:
                             value_data["imageFile"] = encoded
                 elif value_data["valueId"] == "OEM_COMPANY_NAME":
                     value_data["content"] = sap_data.get("OEM_COMPANY_NAME", "")
+                elif value_data["valueId"] == "OemProductCode":
+                    value_data["content"] = sap_data.get("OemProductCode", "")
+                elif value_data["valueId"] == "OemProductCodeDefinition":
+                    value_data["content"] = sap_data.get("OemProductCodeDefinition", "")
+                
 
             for barcode_item in barcode_items:
                 if barcode_item["sira"] == 1:
                     barcode_item["data"] = sap_data.get("SERIAL_NUMBER", "")
                 elif barcode_item["sira"] == 2:
                     barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
+                elif barcode_item["sira"] == 3:
+                    barcode_item["data"] = sap_data.get("OemProductCode", "")
 
             printers = self.application.printers.search_printers_by_name(printer_name)
             width = printers[0]["width"]
