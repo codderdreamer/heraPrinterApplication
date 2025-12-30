@@ -164,7 +164,7 @@ class Utils:
                 "MANUFACTURER": item_info.get("U_manufacturer"),
                 "SITE_ID": item_info.get("U_baglanti_adresi"),
                 "IP": item_info.get("U_ip_info"),
-                "SYSTEM": item_info.get("U_System")
+                "SYSTEM": item_info.get("U_System"),
                 "OemProductCode": item_info.get("U_OemProductCode"),
                 "OemProductCodeDefinition": item_info.get("U_OemProductCodeDefinition"),
             }
