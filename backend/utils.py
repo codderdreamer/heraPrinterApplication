@@ -70,7 +70,7 @@ class Utils:
             }
             
             params = {
-                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P,U_OemProductCode,U_OemProductCodeDefinition",
+                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P",
                 "$filter": f"SerialNumber eq '{serial_number}'"
             }
 
@@ -106,7 +106,7 @@ class Utils:
             
             # 3. Items bilgilerini al
             params = {
-                "$select": "ItemCode,BarCode,ItemName,ForeignName,U_Model,U_RaletedVoltage,U_LogoName,U_OemCompanyName,U_RaletedPower,U_BodyColor,U_operating_temp,U_manufacturer,U_baglanti_adresi,U_ip_info,U_System",
+                "$select": "ItemCode,BarCode,ItemName,ForeignName,U_Model,U_RaletedVoltage,U_LogoName,U_OemCompanyName,U_RaletedPower,U_BodyColor,U_operating_temp,U_manufacturer,U_baglanti_adresi,U_ip_info,U_System,U_OemProductCode,U_OemProductCodeDefinition",
                 "$filter": f"ItemCode eq '{item_code}'"
             }
             
@@ -148,8 +148,7 @@ class Utils:
                 "U_AESKey": serial_info.get("U_AESKey"),
                 "U_AESIV": serial_info.get("U_AESIV"),
                 "PIN_CODE": serial_info.get("U_BLE_A_P"),
-                "OemProductCode": serial_info.get("U_OemProductCode"),
-                "OemProductCodeDefinition": serial_info.get("U_OemProductCodeDefinition"),
+                
 
                 # Items bilgileri
                 "EAN_NUMBER": item_info.get("BarCode"),
@@ -166,6 +165,8 @@ class Utils:
                 "SITE_ID": item_info.get("U_baglanti_adresi"),
                 "IP": item_info.get("U_ip_info"),
                 "SYSTEM": item_info.get("U_System")
+                "OemProductCode": item_info.get("U_OemProductCode"),
+                "OemProductCodeDefinition": item_info.get("U_OemProductCodeDefinition"),
             }
             
             print(f"Device knowledge retrieved successfully for serial: {serial_number}")
