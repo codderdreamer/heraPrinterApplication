@@ -70,7 +70,7 @@ class Utils:
             }
             
             params = {
-                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P,OemProductCode,OemProductCodeDefinition",
+                "$select": "DocEntry,ItemCode,ItemDescription,MfrSerialNo,SerialNumber,U_4GImei,U_BluetoothMAC,U_EthernetMAC,U_CPID,U_MRFID,U_KRFID,U_KRFID1,U_AESKey,U_AESIV,U_BLE_A_P,U_OemProductCode,U_OemProductCodeDefinition",
                 "$filter": f"SerialNumber eq '{serial_number}'"
             }
 
@@ -148,8 +148,8 @@ class Utils:
                 "U_AESKey": serial_info.get("U_AESKey"),
                 "U_AESIV": serial_info.get("U_AESIV"),
                 "PIN_CODE": serial_info.get("U_BLE_A_P"),
-                "OemProductCode": serial_info.get("OemProductCode"),
-                "OemProductCodeDefinition": serial_info.get("OemProductCodeDefinition"),
+                "OemProductCode": serial_info.get("U_OemProductCode"),
+                "OemProductCodeDefinition": serial_info.get("U_OemProductCodeDefinition"),
 
                 # Items bilgileri
                 "EAN_NUMBER": item_info.get("BarCode"),
