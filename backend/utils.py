@@ -274,7 +274,9 @@ class Utils:
                 elif barcode_item["sira"] == 2:
                     barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
                 elif barcode_item["sira"] == 3:
-                    barcode_item["data"] = sap_data.get("OemProductCode", "")
+                    oem_product_code = sap_data.get("OemProductCode", "")
+                    serial_number = sap_data.get("SERIAL_NUMBER", "")
+                    barcode_item["data"] = f"{oem_product_code}/{serial_number}"
 
             printers = self.application.printers.search_printers_by_name(printer_name)
             width = printers[0]["width"]
