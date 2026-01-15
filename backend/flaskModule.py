@@ -498,15 +498,32 @@ class FlaskModule:
                 for barcode_item in barcode_items:
                     barcode_item["data"] = data.get("SERIAL_NUMBER", "")
 
-                # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa textItems içindeki text 18, 19, 20, 21, 22, 23'ü filtrele
+                # Imei 18, 21
+                # Lan mac 19, 22
+                # bt mac 20, 23
+
+                # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa ilgili textItems'ları filtrele
                 bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
                 lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
                 imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
                 
-                # Eğer bu değerlerden herhangi biri yoksa, ilgili text item'ları filtrele
-                if not bt_mac_exists or not lan_mac_exists or not imei_exists:
-                    # Filtrelenecek text item id'leri
-                    text_ids_to_filter = [18, 19, 20, 21, 22, 23]
+                # Filtrelenecek text item id'lerini belirle
+                text_ids_to_filter = []
+                
+                # IMEI_NUMBER yoksa 18 ve 21'i filtrele
+                if not imei_exists:
+                    text_ids_to_filter.extend([18, 21])
+                
+                # LAN_MAC yoksa 19 ve 22'yi filtrele
+                if not lan_mac_exists:
+                    text_ids_to_filter.extend([19, 22])
+                
+                # BT_MAC yoksa 20 ve 23'ü filtrele
+                if not bt_mac_exists:
+                    text_ids_to_filter.extend([20, 23])
+                
+                # Filtreleme işlemini yap
+                if text_ids_to_filter:
                     text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
 
                 printers = self.application.printers.search_printers_by_name(printer_name)
