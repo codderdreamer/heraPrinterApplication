@@ -419,12 +419,15 @@ class FlaskModule:
                         project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                         images_dir = os.path.join(project_root, "database", "images")
                         image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
+                        print(f"Image path: {image_path}")
                         if os.path.exists(image_path):
                             with open(image_path, "rb") as img_file:
                                 encoded = base64.b64encode(img_file.read()).decode("ascii")
                             value_data["type"] = "image"
                             value_data["content"] = ""
                             value_data["imageFile"] = encoded
+                        else:
+                            print(f"Image not found: {image_path}")
                     elif value_data["valueId"] == "mid_lab":
                         value_data["content"] = data.get("mid_lab", "")
                     elif value_data["valueId"] == "IP":
