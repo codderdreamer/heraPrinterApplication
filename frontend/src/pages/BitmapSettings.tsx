@@ -84,13 +84,13 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   const fetchLogo = useCallback(async () => {
     try {
       // Printer'a özel bitmap dosyasını al
-      const blob = await apiService.getLogo(printer.ip, settingsName);
+      const blob = await apiService.getLogo(printer.ip, printer.name, settingsName);
       const url = URL.createObjectURL(blob);
       setLogoUrl(url);
     } catch (error) {
       console.error('Error fetching logo:', error);
     }
-  }, [printer.ip, settingsName]);
+  }, [printer.ip, printer.name, settingsName]);
 
   // Form değiştiğinde bitmap'i otomatik güncelle
   const updateBitmapPreview = useCallback(async () => {
@@ -103,7 +103,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       };
       
       // Mevcut ayarları kaydet ve bitmap oluştur
-      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      await apiService.saveBitmapSettings(printer.ip, printer.name, settingsName, settings);
       
       // Bitmap'i yeniden al
       fetchLogo();
@@ -128,7 +128,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
       };
       
       // Ayarları kaydet ve bitmap dosyasını oluştur
-      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      await apiService.saveBitmapSettings(printer.ip, printer.name, settingsName, settings);
       
       // Oluşturulan bitmap dosyasını yazdır
       const bmp_filename = `bitmap_${printer.ip}_${settingsName}.bmp`;
@@ -159,10 +159,10 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
         barcodeItems
       };
       
-      console.log(`Saving settings for printer ${printer.ip} with name: ${settingsName}`);
+      console.log(`Saving settings for printer ${printer.ip} (${printer.name}) with name: ${settingsName}`);
       console.log('Settings to save:', settings);
       
-      await apiService.saveBitmapSettings(printer.ip, settingsName, settings);
+      await apiService.saveBitmapSettings(printer.ip, printer.name, settingsName, settings);
       
       console.log('Settings saved successfully');
       setSaveStatus('Kaydedildi!');
@@ -183,8 +183,8 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
   // Load settings fonksiyonu
   const handleLoadSettings = async (name: string = 'default') => {
     try {
-      console.log(`Loading settings for printer ${printer.ip} with name: ${name}`);
-      const response = await apiService.getBitmapSettings(printer.ip, name);
+      console.log(`Loading settings for printer ${printer.ip} (${printer.name}) with name: ${name}`);
+      const response = await apiService.getBitmapSettings(printer.ip, printer.name, name);
       console.log('Load settings response:', response);
       
       if (response.found && response.settings) {

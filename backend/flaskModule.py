@@ -255,17 +255,27 @@ class FlaskModule:
             try:
                 data = request.get_json()
                 printer_ip = data.get('ip')
+                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
                 settings_name = data.get('name', 'default')
                 
                 if not printer_ip:
                     return jsonify({"error": "IP is required"}), 400
                 
-                # Check if printer exists
-                existing_printer = self.application.printers.get_printer_by_ip(printer_ip)
-                if not existing_printer:
-                    return jsonify({"error": "Printer not found"}), 404
-                
-                printer_name = existing_printer[0]["name"]
+                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
+                if printer_name:
+                    # Printer name'e göre kontrol et
+                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    # IP'yi de kontrol et (güvenlik için)
+                    if existing_printer[0]["ip"] != printer_ip:
+                        return jsonify({"error": "Printer IP mismatch"}), 400
+                else:
+                    # Geriye dönük uyumluluk: IP'ye göre bul
+                    existing_printer = self.application.printers.get_printer_by_ip(printer_ip)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer_name = existing_printer[0]["name"]
                 
                 # Get bitmap settings from database
                 bitmap_settings = self.application.printers.get_bitmap_settings(printer_ip, printer_name, settings_name)
@@ -617,18 +627,27 @@ class FlaskModule:
             try:
                 data = request.get_json()
                 ip = data.get('ip')
+                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
                 name = data.get('name', 'default')  # Default name if not provided
                 
                 if not ip:
                     return jsonify({"error": "IP is required"}), 400
                 
-                # Check if printer exists
-                existing_printer = self.application.printers.get_printer_by_ip(ip)
-                if not existing_printer:
-                    return jsonify({"error": "Printer not found"}), 404
-                
-                # Get printer name from existing printer
-                printer_name = existing_printer[0]["name"]
+                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
+                if printer_name:
+                    # Printer name'e göre kontrol et
+                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    # IP'yi de kontrol et (güvenlik için)
+                    if existing_printer[0]["ip"] != ip:
+                        return jsonify({"error": "Printer IP mismatch"}), 400
+                else:
+                    # Geriye dönük uyumluluk: IP'ye göre bul
+                    existing_printer = self.application.printers.get_printer_by_ip(ip)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer_name = existing_printer[0]["name"]
                 
                 # Get bitmap settings data
                 text_items = data.get('textItems', [])
@@ -699,17 +718,27 @@ class FlaskModule:
             try:
                 data = request.get_json()
                 ip = data.get('ip')
+                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
                 name = data.get('name', None)
                 
                 if not ip:
                     return jsonify({"error": "IP is required"}), 400
                 
-                # Get printer name from IP
-                existing_printer = self.application.printers.get_printer_by_ip(ip)
-                if not existing_printer:
-                    return jsonify({"error": "Printer not found"}), 404
-                
-                printer_name = existing_printer[0]["name"]
+                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
+                if printer_name:
+                    # Printer name'e göre kontrol et
+                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    # IP'yi de kontrol et (güvenlik için)
+                    if existing_printer[0]["ip"] != ip:
+                        return jsonify({"error": "Printer IP mismatch"}), 400
+                else:
+                    # Geriye dönük uyumluluk: IP'ye göre bul
+                    existing_printer = self.application.printers.get_printer_by_ip(ip)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer_name = existing_printer[0]["name"]
                 
                 print(f"Getting bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
                 

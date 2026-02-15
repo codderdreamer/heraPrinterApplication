@@ -65,13 +65,13 @@ class ApiService {
     return this.request<{ status: string; message: string }>('/health');
   }
 
-  async getLogo(printerIp: string, settingsName: string = 'default'): Promise<Blob> {
+  async getLogo(printerIp: string, printerName: string, settingsName: string = 'default'): Promise<Blob> {
     const response = await fetch(`${API_BASE_URL}/printer/logo`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ ip: printerIp, name: settingsName }),
+      body: JSON.stringify({ ip: printerIp, printerName, name: settingsName }),
     });
 
     if (!response.ok) {
@@ -98,7 +98,7 @@ class ApiService {
     });
   }
 
-  async saveBitmapSettings(ip: string, name: string, settings: {
+  async saveBitmapSettings(ip: string, printerName: string, name: string, settings: {
     textItems: any[];
     iconItems: any[];
     barcodeItems: any[];
@@ -141,6 +141,7 @@ class ApiService {
       },
       body: JSON.stringify({
         ip,
+        printerName,
         name,
         ...settings
       }),
@@ -153,7 +154,7 @@ class ApiService {
     return response.blob();
   }
 
-  async getBitmapSettings(ip: string, name?: string): Promise<{
+  async getBitmapSettings(ip: string, printerName: string, name?: string): Promise<{
     found: boolean;
     settings?: any;
     settings_list?: any[];
@@ -162,7 +163,7 @@ class ApiService {
   }> {
     return this.request('/bitmap-settings/get', {
       method: 'POST',
-      body: JSON.stringify({ ip, name }),
+      body: JSON.stringify({ ip, printerName, name }),
     });
   }
 
