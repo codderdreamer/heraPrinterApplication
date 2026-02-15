@@ -976,6 +976,7 @@ const BitmapSettings: React.FC<BitmapSettingsProps> = ({ printer, onBack }) => {
                     onChange={(e) => updateBarcodeItem(barcodeItem.id, 'format', e.target.value)}
                   >
                     <option value="code128">Code 128</option>
+                    <option value="code128a">Code 128A</option>
                     <option value="code39">Code 39</option>
                     <option value="ean13">EAN-13</option>
                     <option value="ean8">EAN-8</option>

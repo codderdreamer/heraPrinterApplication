@@ -365,6 +365,7 @@ class FlaskModule:
                     "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
                     "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
                     "OemProductCode": sap_data.get("OemProductCode") or "",
+                    "OemProductCode2": sap_data.get("OemProductCode2") or "",
                     "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
                 }
 
@@ -384,9 +385,15 @@ class FlaskModule:
                 }
 
                 # Değer alanlarını doldur
+                is_arcelik = data.get("LOGO_NAME") == "arcelikbywat_logo"
+                
                 for value_data in value_items:
                     if value_data["valueId"] == "SERIAL_NUMBER":
-                        value_data["content"] = data.get("SERIAL_NUMBER", "")
+                        if is_arcelik:
+                            value_data["content"] = self.application.utils.create_arcelik_serial_number(data.get("OemProductCode2"), data.get("SERIAL_NUMBER"))
+                            value_data["fontSize"] = 15  # Font size'ı 15 yap
+                        else:
+                            value_data["content"] = data.get("SERIAL_NUMBER", "")
                     elif value_data["valueId"] == "DATE_NUMBER":
                         value_data["content"] = data.get("DATE_NUMBER", "")
                     elif value_data["valueId"] == "SITE_ID":
@@ -497,6 +504,14 @@ class FlaskModule:
                         value_data["content"] = data.get("OemProductCode", "")
                     elif value_data["valueId"] == "OemProductCodeDefinition":
                         value_data["content"] = data.get("OemProductCodeDefinition", "")
+
+                # Arçelik logo ise text_items içindeki id=13 olan text item'ın font size'ını 15 yap
+                if is_arcelik:
+                    for text_item in text_items:
+                        if text_item.get("id") == 13:
+                            text_item["fontSize"] = 15
+                            break
+
                 # Barkod alanlarını seri numarası ile doldur
                 for barcode_item in barcode_items:
                     barcode_item["data"] = data.get("SERIAL_NUMBER", "")

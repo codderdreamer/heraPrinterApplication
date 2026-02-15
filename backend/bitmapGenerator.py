@@ -363,9 +363,12 @@ class BitmapGenerator:
                 print(f"QR Code '{data}' bbox: {bbox}")
                 return bbox
             
-            # Diğer barkod tipleri (code128, ean13, ean8, code39)
+            # Diğer barkod tipleri (code128, code128a, ean13, ean8, code39)
+            # Not: Code128A, Code128'ın charset='A' parametresi ile kullanılan versiyonudur
+            # Bu yüzden ikisi de aynı Code128 sınıfını kullanır, fark charset parametresinde
             barcode_classes = {
-                "code128": Code128,
+                "code128": Code128,      # Varsayılan charset (genellikle B)
+                "code128a": Code128,    # charset='A' ile kullanılacak (aşağıda belirtiliyor)
                 "ean13": EAN13,
                 "ean8": EAN8,
                 "code39": Code39
@@ -405,6 +408,9 @@ class BitmapGenerator:
             # Code39 için checksum'ı kapatıyoruz (sona eklenen kontrol karakterini önlemek için)
             if btype == "code39":
                 barcode_obj = barcode_classes[btype](data, writer=writer, add_checksum=False)
+            elif btype == "code128a":
+                # Code128A için charset='A' parametresi kullan
+                barcode_obj = barcode_classes[btype](data, writer=writer, charset='A')
             else:
                 barcode_obj = barcode_classes[btype](data, writer=writer)
 

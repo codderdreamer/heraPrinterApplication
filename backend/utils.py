@@ -4,6 +4,7 @@ import base64
 import requests
 import urllib3
 import time
+from datetime import datetime
 from backend.bitmapGenerator import BitmapGenerator
 from backend.tscPrinterModule import printer_manager
 
@@ -106,7 +107,7 @@ class Utils:
             
             # 3. Items bilgilerini al
             params = {
-                "$select": "ItemCode,BarCode,ItemName,ForeignName,U_Model,U_RaletedVoltage,U_LogoName,U_OemCompanyName,U_RaletedPower,U_BodyColor,U_operating_temp,U_manufacturer,U_baglanti_adresi,U_ip_info,U_System,U_OemProductCode,U_OemProductCodeDefinition",
+                "$select": "ItemCode,BarCode,ItemName,ForeignName,U_Model,U_RaletedVoltage,U_LogoName,U_OemCompanyName,U_RaletedPower,U_BodyColor,U_operating_temp,U_manufacturer,U_baglanti_adresi,U_ip_info,U_System,U_OemProductCode,U_OemProductCode2,U_OemProductCodeDefinition",
                 "$filter": f"ItemCode eq '{item_code}'"
             }
             
@@ -167,6 +168,7 @@ class Utils:
                 "SYSTEM": item_info.get("U_System"),
                 "OemProductCode": item_info.get("U_OemProductCode"),
                 "OemProductCodeDefinition": item_info.get("U_OemProductCodeDefinition"),
+                "OemProductCode2": item_info.get("U_OemProductCode2"),
             }
             
             print(f"Device knowledge retrieved successfully for serial: {serial_number}")
@@ -376,8 +378,35 @@ class Utils:
                     return False
             else:
                 return False
-                
-
-
         except Exception as e:
             print(f"print_qr error: {e}")
+
+
+    def create_arcelik_serial_number(self, OemProductCode2, serial_number):
+        '''
+        STOK KODU (10 hane)       : OemProductCode2 
+        YIL (2 hane)              : DATE_NUMBER
+        SERİ NUMARASI (6 hane)    : kendi ürettiğimiz seri numarasının son 5 hanesi başında 1 olacak şekilde ÖRNEK 101148471138      
+                                    5 hanesi : 71138     başında 1 koyarak :  171138
+        AY (2 hane)               : DATE_NUMBER
+        PAKET ADEDİ (2 hane)      : zaten paketlerde 1 cihaz olacağı için bütün hepsinde 01 koyacağız hepsinde 
+        '''
+        try:
+            # Şu anki yıl ve ayı al
+            now = datetime.now()
+            year = now.strftime("%y")  # 2 haneli yıl (örn: 24)
+            month = now.strftime("%m")  # 2 haneli ay (örn: 01, 12)
+            
+            # Serial number'ı string'e çevir ve son 5 hanesini al, başına 1 ekle
+            serial_str = str(serial_number)
+            last_5_digits = serial_str[-5:] if len(serial_str) >= 5 else serial_str.zfill(5)
+            serial_with_prefix = "1" + last_5_digits  # Başına 1 ekle (örn: 171138)
+            
+            arcelik_serial_number = OemProductCode2 + year + serial_with_prefix + month + "01"
+            return arcelik_serial_number
+        except Exception as e:
+            print(f"create_arcelik_serial_number error: {e}")
+            return None
+
+
+
