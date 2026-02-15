@@ -252,6 +252,8 @@ class Utils:
                     value_data["content"] = sap_data.get("BODY_COLOR", "")
                 elif value_data["valueId"] == "SERIAL_NUMBER":
                     value_data["content"] = sap_data.get("SERIAL_NUMBER", "")
+                elif value_data["valueId"] == "EAN_NUMBER":
+                    value_data["content"] = sap_data.get("EAN_NUMBER", "")
                 elif value_data["valueId"] == "ARÇELİK_SERİ_NO":
                     value_data["content"] = self.create_arcelik_serial_number(sap_data.get("OemProductCode2"), sap_data.get("SERIAL_NUMBER"))
                 elif value_data["valueId"] == "MANUFACTURER":
@@ -282,7 +284,10 @@ class Utils:
                 if barcode_item["sira"] == 1:
                     barcode_item["data"] = sap_data.get("SERIAL_NUMBER", "")
                 elif barcode_item["sira"] == 2:
-                    barcode_item["data"] = self.create_arcelik_serial_number(sap_data.get("OemProductCode2"), sap_data.get("SERIAL_NUMBER"))
+                    if is_arcelik:
+                        barcode_item["data"] = self.create_arcelik_serial_number(sap_data.get("OemProductCode2"), sap_data.get("SERIAL_NUMBER"))
+                    else:
+                        barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
                 elif barcode_item["sira"] == 3:
                     oem_product_code = sap_data.get("OemProductCode", "")
                     serial_number = sap_data.get("SERIAL_NUMBER", "")
