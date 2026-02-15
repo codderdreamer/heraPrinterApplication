@@ -33,8 +33,10 @@ const HomePage: React.FC = () => {
     }
   };
 
-  const handleConfigureBitmap = (ip: string) => {
-    // IP'yi localStorage'a kaydet
+  const handleConfigureBitmap = (ip: string, name: string) => {
+    // Printer name'i localStorage'a kaydet (öncelikli)
+    localStorage.setItem('selectedPrinterName', name);
+    // IP'yi de kaydet (geriye dönük uyumluluk)
     localStorage.setItem('selectedPrinterIp', ip);
     // Navigate to bitmap settings page
     window.location.href = '/bitmap-settings';
@@ -68,7 +70,7 @@ const HomePage: React.FC = () => {
                 key={printer.id}
                 printer={printer}
                 onDelete={(ip) => handleDeletePrinter(ip)}
-                onConfigureBitmap={(ip) => handleConfigureBitmap(ip)}
+                onConfigureBitmap={(ip, name) => handleConfigureBitmap(ip, name)}
               />
             ))}
           </div>

@@ -33,15 +33,17 @@ function BitmapSettingsWrapper() {
   useEffect(() => {
     const fetchPrinter = async () => {
       try {
-        // localStorage'dan IP'yi al
-        const ip = localStorage.getItem('selectedPrinterIp');
+        // localStorage'dan printer name'i al (öncelikli)
+        const printerName = localStorage.getItem('selectedPrinterName');
+        const printerIp = localStorage.getItem('selectedPrinterIp'); // Geriye dönük uyumluluk
         
-        if (!ip) {
+        if (!printerName && !printerIp) {
           navigate('/printer-settings');
           return;
         }
         
-        const data = await apiService.getPrinter(ip);
+        // Önce name'e göre ara, yoksa IP'ye göre ara
+        const data = await apiService.getPrinter(printerIp || undefined, printerName || undefined);
         setPrinter(data);
       } catch (error) {
         console.error('Error fetching printer:', error);

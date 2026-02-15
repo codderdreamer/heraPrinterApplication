@@ -114,15 +114,24 @@ class FlaskModule:
             try:
                 data = request.get_json()
                 ip = data.get('ip')
+                name = data.get('name')  # Printer name de destekleniyor
                 
-                if not ip:
-                    return jsonify({"error": "IP is required"}), 400
+                if not ip and not name:
+                    return jsonify({"error": "IP or name is required"}), 400
                 
-                printer_data = self.application.printers.get_printer_by_ip(ip)
-                if not printer_data:
-                    return jsonify({"error": "Printer not found"}), 404
+                # Önce name'e göre ara, yoksa IP'ye göre ara
+                if name:
+                    printer_data = self.application.printers.get_printer_by_name(name)
+                    if not printer_data:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer = printer_data[0]
+                    ip = printer["ip"]  # IP'yi printer'dan al
+                else:
+                    printer_data = self.application.printers.get_printer_by_ip(ip)
+                    if not printer_data:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer = printer_data[0]
                 
-                printer = printer_data[0]
                 # Check printer connection status using printer_manager
                 status_info = printer_manager.get_printer_status(ip)
                 

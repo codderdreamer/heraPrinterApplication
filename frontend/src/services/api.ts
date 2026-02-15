@@ -33,10 +33,10 @@ class ApiService {
     return this.request<Printer[]>('/printers');
   }
 
-  async getPrinter(ip: string): Promise<Printer> {
+  async getPrinter(ip?: string, name?: string): Promise<Printer> {
     return this.request<Printer>('/printer', {
       method: 'POST',
-      body: JSON.stringify({ ip }),
+      body: JSON.stringify({ ip, name }),
     });
   }
 

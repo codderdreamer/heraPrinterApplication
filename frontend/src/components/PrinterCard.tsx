@@ -5,7 +5,7 @@ import '../styles/components/PrinterCard.css';
 interface PrinterCardProps {
   printer: Printer;
   onDelete: (ip: string) => void;
-  onConfigureBitmap: (ip: string) => void;
+  onConfigureBitmap: (ip: string, name: string) => void;
 }
 
 const PrinterCard: React.FC<PrinterCardProps> = ({ 
@@ -46,7 +46,7 @@ const PrinterCard: React.FC<PrinterCardProps> = ({
       <div className="printer-actions">
         <button 
           className="btn btn-secondary"
-          onClick={() => onConfigureBitmap(printer.ip)}
+          onClick={() => onConfigureBitmap(printer.ip, printer.name)}
         >
           Bitmap Ayarla
         </button>
