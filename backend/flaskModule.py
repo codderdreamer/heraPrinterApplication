@@ -256,11 +256,13 @@ class FlaskModule:
                 if not existing_printer:
                     return jsonify({"error": "Printer not found"}), 404
                 
+                printer_name = existing_printer[0]["name"]
+                
                 # Get bitmap settings from database
-                bitmap_settings = self.application.printers.get_bitmap_settings(printer_ip, settings_name)
+                bitmap_settings = self.application.printers.get_bitmap_settings(printer_ip, printer_name, settings_name)
                 if not bitmap_settings:
                     # If no specific settings found, try to find any settings for this printer
-                    all_settings = self.application.printers.get_bitmap_settings(printer_ip)
+                    all_settings = self.application.printers.get_bitmap_settings(printer_ip, printer_name)
                     if all_settings:
                         # Use the first available settings
                         bitmap_settings = [all_settings[0]]
@@ -370,7 +372,13 @@ class FlaskModule:
                 }
 
                 ip = self.application.printers.get_printer_ip_by_name(printer_name)
-                settings_data = self.application.printers.get_printer_data_by_ip(ip)
+                # Printer name'e göre bitmap ayarlarını al
+                settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
+                if not settings_data:
+                    # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
+                    settings_data = self.application.printers.get_printer_data_by_ip(ip)
+                if not settings_data:
+                    return jsonify({"error": "Bitmap settings not found"}), 404
                 settings_data_json = json.loads(settings_data)
                 text_items = settings_data_json.get('textItems', [])
                 value_items = settings_data_json.get('valueItems', [])
@@ -610,6 +618,9 @@ class FlaskModule:
                 if not existing_printer:
                     return jsonify({"error": "Printer not found"}), 404
                 
+                # Get printer name from existing printer
+                printer_name = existing_printer[0]["name"]
+                
                 # Get bitmap settings data
                 text_items = data.get('textItems', [])
                 value_items = data.get('valueItems', [])
@@ -617,7 +628,7 @@ class FlaskModule:
                 barcode_items = data.get('barcodeItems', [])
                 
                 # Debug logging
-                print(f"Saving bitmap settings for {ip} with name: {name}")
+                print(f"Saving bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
                 print(f"Text items count: {len(text_items)}")
                 print(f"Value items count: {len(value_items)}")
                 print(f"Icon items count: {len(icon_items)}")
@@ -643,7 +654,7 @@ class FlaskModule:
                     "barcodeItems": barcode_items
                 }
                 success = self.application.printers.save_bitmap_settings(
-                    ip, name, json.dumps(settings_data)
+                    ip, printer_name, name, json.dumps(settings_data)
                 )
                 print(f"Save result: {success}")
                 
@@ -684,12 +695,19 @@ class FlaskModule:
                 if not ip:
                     return jsonify({"error": "IP is required"}), 400
                 
-                print(f"Getting bitmap settings for {ip} with name: {name}")
+                # Get printer name from IP
+                existing_printer = self.application.printers.get_printer_by_ip(ip)
+                if not existing_printer:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                printer_name = existing_printer[0]["name"]
+                
+                print(f"Getting bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
                 
                 if name:
-                    settings = self.application.printers.get_bitmap_settings(ip, name)
+                    settings = self.application.printers.get_bitmap_settings(ip, printer_name, name)
                 else:
-                    settings = self.application.printers.get_bitmap_settings(ip)
+                    settings = self.application.printers.get_bitmap_settings(ip, printer_name)
                 
                 print(f"Found settings: {settings}")
                 
@@ -735,7 +753,14 @@ class FlaskModule:
                 if not ip or not name:
                     return jsonify({"error": "IP and name are required"}), 400
                 
-                success = self.application.printers.delete_bitmap_settings(ip, name)
+                # Get printer name from IP
+                existing_printer = self.application.printers.get_printer_by_ip(ip)
+                if not existing_printer:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                printer_name = existing_printer[0]["name"]
+                
+                success = self.application.printers.delete_bitmap_settings(ip, printer_name, name)
                 
                 if success:
                     return jsonify({"message": "Settings deleted successfully"})

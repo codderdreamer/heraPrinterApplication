@@ -35,12 +35,27 @@ class Printers(DatabaseModule):
         bitmap_settings_columns = {
             "id": "INTEGER PRIMARY KEY AUTOINCREMENT",
             "printer_ip": "TEXT NOT NULL",
-            "name": "TEXT NOT NULL",
+            "printer_name": "TEXT NOT NULL",  # Printer'ın adı (aynı IP'de farklı printer'lar için)
+            "name": "TEXT NOT NULL",  # Bitmap ayarının adı (default, test, vb.)
             "settings_data": "TEXT NOT NULL",  # JSON string
             "created_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP",
             "updated_at": "TIMESTAMP DEFAULT CURRENT_TIMESTAMP"
         }
-        return self.create_table("bitmap_settings", bitmap_settings_columns)
+        result = self.create_table("bitmap_settings", bitmap_settings_columns)
+        
+        # Eğer tablo zaten varsa ve printer_name kolonu yoksa ekle (migration)
+        try:
+            self.execute_query("SELECT printer_name FROM bitmap_settings LIMIT 1")
+        except:
+            # printer_name kolonu yok, ekle
+            try:
+                self.execute_update("ALTER TABLE bitmap_settings ADD COLUMN printer_name TEXT")
+                # Mevcut kayıtlar için printer_name'i printer_ip'den al (geçici çözüm)
+                self.execute_update("UPDATE bitmap_settings SET printer_name = printer_ip WHERE printer_name IS NULL")
+            except Exception as e:
+                print(f"Migration warning: {e}")
+        
+        return result
 
     def insert_printer(self, ip: str, name: str, dpi: int, width: int, height: int) -> bool:
         """Insert a new printer"""
@@ -80,49 +95,59 @@ class Printers(DatabaseModule):
         return result[0]["count"] if result else 0
 
     # Bitmap Settings Methods
-    def save_bitmap_settings(self, printer_ip: str, name: str, settings_data: str) -> bool:
+    def save_bitmap_settings(self, printer_ip: str, printer_name: str, name: str, settings_data: str) -> bool:
         """Save bitmap settings for a printer"""
-        print(f"Database: Saving bitmap settings for {printer_ip} with name: {name}")
+        print(f"Database: Saving bitmap settings for {printer_ip} (printer: {printer_name}) with settings name: {name}")
         print(f"Database: Settings data length: {len(settings_data)}")
         
-        # Check if settings already exist for this printer and name
-        existing = self.get_bitmap_settings(printer_ip, name)
+        # Check if settings already exist for this printer (ip + name combination) and settings name
+        existing = self.get_bitmap_settings(printer_ip, printer_name, name)
         print(f"Database: Existing settings found: {len(existing) if existing else 0}")
         
         if existing:
             # Update existing settings
-            query = "UPDATE bitmap_settings SET settings_data = ?, updated_at = CURRENT_TIMESTAMP WHERE printer_ip = ? AND name = ?"
-            result = self.execute_update(query, (settings_data, printer_ip, name))
+            query = "UPDATE bitmap_settings SET settings_data = ?, updated_at = CURRENT_TIMESTAMP WHERE printer_ip = ? AND printer_name = ? AND name = ?"
+            result = self.execute_update(query, (settings_data, printer_ip, printer_name, name))
             print(f"Database: Update result: {result}")
             return result
         else:
             # Insert new settings
-            query = "INSERT INTO bitmap_settings (printer_ip, name, settings_data) VALUES (?, ?, ?)"
-            result = self.execute_update(query, (printer_ip, name, settings_data))
+            query = "INSERT INTO bitmap_settings (printer_ip, printer_name, name, settings_data) VALUES (?, ?, ?, ?)"
+            result = self.execute_update(query, (printer_ip, printer_name, name, settings_data))
             print(f"Database: Insert result: {result}")
             return result
 
-    def get_bitmap_settings(self, printer_ip: str, name: str = None) -> List[Dict[str, Any]]:
+    def get_bitmap_settings(self, printer_ip: str, printer_name: str = None, name: str = None) -> List[Dict[str, Any]]:
         """Get bitmap settings for a printer"""
-        print(f"Database: Getting bitmap settings for {printer_ip} with name: {name}")
+        print(f"Database: Getting bitmap settings for {printer_ip} (printer: {printer_name}) with settings name: {name}")
         
-        if name:
+        if printer_name and name:
+            # Hem printer name hem de settings name belirtilmiş
+            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ? AND printer_name = ? AND name = ?"
+            result = self.execute_query(query, (printer_ip, printer_name, name))
+        elif printer_name:
+            # Sadece printer name belirtilmiş
+            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ? AND printer_name = ?"
+            result = self.execute_query(query, (printer_ip, printer_name))
+        elif name:
+            # Sadece settings name belirtilmiş (geriye dönük uyumluluk)
             query = "SELECT * FROM bitmap_settings WHERE printer_ip = ? AND name = ?"
             result = self.execute_query(query, (printer_ip, name))
         else:
+            # Sadece IP belirtilmiş (geriye dönük uyumluluk)
             query = "SELECT * FROM bitmap_settings WHERE printer_ip = ?"
             result = self.execute_query(query, (printer_ip,))
-
+        
         return result
 
     def get_all_bitmap_settings(self) -> List[Dict[str, Any]]:
         """Get all bitmap settings"""
         return self.execute_query("SELECT * FROM bitmap_settings ORDER BY printer_ip, name")
 
-    def delete_bitmap_settings(self, printer_ip: str, name: str) -> bool:
+    def delete_bitmap_settings(self, printer_ip: str, printer_name: str, name: str) -> bool:
         """Delete bitmap settings"""
-        query = "DELETE FROM bitmap_settings WHERE printer_ip = ? AND name = ?"
-        return self.execute_update(query, (printer_ip, name))
+        query = "DELETE FROM bitmap_settings WHERE printer_ip = ? AND printer_name = ? AND name = ?"
+        return self.execute_update(query, (printer_ip, printer_name, name))
 
     def get_default_bitmap_settings(self, printer_ip: str) -> Dict[str, Any]:
         """Get default bitmap settings for a printer (first one if exists)"""
@@ -143,8 +168,9 @@ class Printers(DatabaseModule):
             return None
 
     def get_printer_data_by_ip(self, ip: str) -> Dict[str, Any]:
+        """Get printer data by IP (geriye dönük uyumluluk için - ilk bulunan ayarı döndürür)"""
         try:
-            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ?"
+            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ? LIMIT 1"
             result = self.execute_query(query, (ip,))
             if result:
                 return result[0]["settings_data"]
@@ -152,4 +178,26 @@ class Printers(DatabaseModule):
         except Exception as e:
             print(f"Error getting printer data by IP: {e}")
             return None
+    
+    def get_printer_data_by_name(self, printer_name: str, settings_name: str = "default") -> Dict[str, Any]:
+        """Get printer bitmap settings by printer name"""
+        try:
+            # Önce printer'ın IP'sini bul
+            printer = self.get_printer_by_name(printer_name)
+            if not printer:
+                return None
+            
+            ip = printer[0]["ip"]
+            query = "SELECT * FROM bitmap_settings WHERE printer_ip = ? AND printer_name = ? AND name = ? LIMIT 1"
+            result = self.execute_query(query, (ip, printer_name, settings_name))
+            if result:
+                return result[0]["settings_data"]
+            return None
+        except Exception as e:
+            print(f"Error getting printer data by name: {e}")
+            return None
+    
+    def get_printer_by_name(self, name: str) -> List[Dict[str, Any]]:
+        """Get printer by name"""
+        return self.execute_query("SELECT * FROM printers WHERE name = ?", (name,))
 

@@ -216,7 +216,11 @@ class Utils:
         try:
             printer_name = "PAKET"
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
-            settings_data = self.application.printers.get_printer_data_by_ip(ip)
+            # Printer name'e göre bitmap ayarlarını al
+            settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
+            if not settings_data:
+                # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
+                settings_data = self.application.printers.get_printer_data_by_ip(ip)
             print(f"Settings data: {settings_data}")
             settings_data_json = json.loads(settings_data)
             text_items = settings_data_json.get('textItems', [])
@@ -312,7 +316,11 @@ class Utils:
         try:
             printer_name = "QR KOD"
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
-            settings_data = self.application.printers.get_printer_data_by_ip(ip)
+            # Printer name'e göre bitmap ayarlarını al
+            settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
+            if not settings_data:
+                # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
+                settings_data = self.application.printers.get_printer_data_by_ip(ip)
             print(f"Settings data: {settings_data}")
             settings_data_json = json.loads(settings_data)
             text_items = settings_data_json.get('textItems', [])
