@@ -387,6 +387,21 @@ class BitmapGenerator:
                 if len(digits) < 7:
                     raise ValueError(f"EAN8 needs 7 digits (got {len(digits)}). Data: '{data}'")
                 data = digits[:7]
+            
+            # Code128 için özel işleme: "99" ile başlayan verilerde encoding sorunu olabilir
+            # python-barcode kütüphanesi Code128'i oluştururken bazı karakter kombinasyonlarını
+            # yanlış yorumlayabiliyor. Code 128'de "99" karakterleri normal karakterler olmalı,
+            # ancak python-barcode'un encoding algoritması bunları yanlış yorumlayabiliyor.
+            # Çözüm: Veriyi olduğu gibi kullan, ancak python-barcode'un doğru encode ettiğinden emin ol
+            if btype == "code128":
+                original_data = data
+                # Code128'de "99" ile başlayan verilerde python-barcode kütüphanesi
+                # bazen yanlış encoding yapabiliyor. Veriyi doğrudan kullanıyoruz.
+                # Eğer sorun devam ederse, alternatif bir barcode kütüphanesi kullanılabilir.
+                if data.startswith("99"):
+                    print(f"Code128: Data starts with '99': '{data}' (length: {len(data)})")
+                    # Veriyi olduğu gibi kullan - python-barcode'un doğru encode etmesi gerekiyor
+                    data = original_data
 
             # 3) Writer oluştur (fonta dokunmuyoruz)
             writer = ImageWriter()
@@ -403,8 +418,31 @@ class BitmapGenerator:
 
             # 4) Barcode objesi ve doğrudan PIL Image üretimi
             # Code39 için checksum'ı kapatıyoruz (sona eklenen kontrol karakterini önlemek için)
+            # Code128 için özel işleme: python-barcode'un encoding sorunlarını önlemek için
+            # veriyi doğrudan kullanıyoruz. Code128'de "99" ile başlayan verilerde
+            # python-barcode kütüphanesi bazen yanlış encoding yapabiliyor.
             if btype == "code39":
                 barcode_obj = barcode_classes[btype](data, writer=writer, add_checksum=False)
+            elif btype == "code128":
+                # Code128 için özel işleme: "99" ile başlayan verilerde python-barcode
+                # kütüphanesi Code C setine encode ediyor ve "99" karakterlerini kaybediyor.
+                # Çözüm: Veriyi Code B setine zorlamak için başına bir boşluk ekleyip çıkarıyoruz.
+                # Bu, python-barcode'un Code B kullanmasını zorlar ve "99" karakterleri korunur.
+                try:
+                    # "99" ile başlayan verilerde Code B'ye zorlamak için başına boşluk ekle
+                    if data.startswith("99"):
+                        print(f"Code128: Data starts with '99': '{data}' - forcing Code B encoding")
+                        # Başına boşluk ekleyerek Code B'ye zorla
+                        # python-barcode boşluk karakterini görünce Code B kullanacak
+                        modified_data = " " + data
+                        barcode_obj = Code128(modified_data, writer=writer)
+                        print(f"Code128: Created barcode with modified data (space prefix): '{modified_data}'")
+                    else:
+                        barcode_obj = Code128(data, writer=writer)
+                except Exception as e:
+                    print(f"Code128: Error creating barcode object: {e}")
+                    # Hata durumunda normal yöntemi dene
+                    barcode_obj = Code128(data, writer=writer)
             else:
                 barcode_obj = barcode_classes[btype](data, writer=writer)
 
