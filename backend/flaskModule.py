@@ -333,6 +333,264 @@ class FlaskModule:
                 print(f"Logo endpoint error: {e}")
                 return jsonify({"error": str(e)}), 500
 
+        @self.app.route("/api/testApplication/print", methods=['POST'])
+        def test_application_print():
+            try:
+                payload = request.get_json(silent=True) or {}
+
+                serial_number = payload.get("SERIAL_NUMBER") or ""
+                if not serial_number:
+                    return jsonify({"error": "Serial number is required"}), 400
+
+                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
+                if not sap_data:
+                    return jsonify({"error": "SAP data not found"}), 404
+
+                is_arcelik = sap_data.get("LOGO_NAME") == "arcelikbywat_logo"
+
+                # Normal etiketi yazdır
+                result_normal = self.print_yan_etiket_normal(is_arcelik, payload, sap_data)
+                # Helper fonksiyon tuple döndürüyorsa (response, status_code) kontrol et
+                if isinstance(result_normal, tuple):
+                    response, status_code = result_normal
+                    if status_code != 200:
+                        # Hata durumu - hata mesajını döndür
+                        return result_normal
+                
+                # Eğer arçelik ise arçelik etiketini de yazdır
+                if is_arcelik:
+                    result_arcelik = self.print_yan_etiket_arcelik(payload, sap_data)
+                    if isinstance(result_arcelik, tuple):
+                        response, status_code = result_arcelik
+                        if status_code != 200:
+                            # Hata durumu
+                            return result_arcelik
+                    return jsonify({"message": "Both labels printed successfully (normal + arcelik)"})
+                else:
+                    return jsonify({"message": "Label printed successfully"})
+                    
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/barcodeScanner/print", methods=['POST'])
+        def barcode_scanner_print():
+            try:
+                data = request.get_json()
+                serial_number = data.get('SERIAL_NUMBER', "")
+                print(f"/api/barcodeScanner/print Serial number: {serial_number}")
+                if not serial_number:
+                    return jsonify({"error": "Serial number not found"}), 404
+                    return False
+
+                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
+                if not sap_data:
+                    return jsonify({"error": "SAP data not found"}), 404
+                print(f"SAP data: {sap_data}")
+                self.application.utils.print_paket(serial_number, sap_data)
+                pin_code = sap_data.get("PIN_CODE", "")
+                if pin_code:
+                    self.application.utils.print_qr(serial_number, sap_data)
+
+                return jsonify({"message": "Barcode printed successfully"})
+            except Exception as e:
+                print(f"barcode_scanner_print error: {e}")
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/bitmap-settings", methods=['POST'])
+        def save_bitmap_settings():
+            try:
+                data = request.get_json()
+                ip = data.get('ip')
+                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
+                name = data.get('name', 'default')  # Default name if not provided
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
+                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
+                if printer_name:
+                    # Printer name'e göre kontrol et
+                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    # IP'yi de kontrol et (güvenlik için)
+                    if existing_printer[0]["ip"] != ip:
+                        return jsonify({"error": "Printer IP mismatch"}), 400
+                else:
+                    # Geriye dönük uyumluluk: IP'ye göre bul
+                    existing_printer = self.application.printers.get_printer_by_ip(ip)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer_name = existing_printer[0]["name"]
+                
+                # Get bitmap settings data
+                text_items = data.get('textItems', [])
+                value_items = data.get('valueItems', [])
+                icon_items = data.get('iconItems', [])
+                barcode_items = data.get('barcodeItems', [])
+                
+                # Debug logging
+                print(f"Saving bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
+                print(f"Text items count: {len(text_items)}")
+                print(f"Value items count: {len(value_items)}")
+                print(f"Icon items count: {len(icon_items)}")
+                print(f"Barcode items count: {len(barcode_items)}")
+                
+                # Log icon items details
+                for i, icon_item in enumerate(icon_items):
+                    icon_file_size = len(icon_item.get('iconFile', '')) if icon_item.get('iconFile') else 0
+                    print(f"Icon item {i}: x={icon_item.get('x', 0)}, y={icon_item.get('y', 0)}, "
+                          f"width={icon_item.get('width', 0)}, height={icon_item.get('height', 0)}, "
+                          f"iconFile size={icon_file_size} chars")
+                
+                # Log barcode items details
+                for i, barcode_item in enumerate(barcode_items):
+                    print(f"Barcode item {i}: x={barcode_item.get('x', 0)}, y={barcode_item.get('y', 0)}, "
+                          f"data='{barcode_item.get('data', '')}', format={barcode_item.get('format', '')}")
+                
+                # Create settings data structure
+                settings_data = {
+                    "textItems": text_items,
+                    "valueItems": value_items,
+                    "iconItems": icon_items,
+                    "barcodeItems": barcode_items
+                }
+                success = self.application.printers.save_bitmap_settings(
+                    ip, printer_name, name, json.dumps(settings_data)
+                )
+                print(f"Save result: {success}")
+                
+                if success:
+                    # Generate bitmap file
+                    try:
+                        printer_info = existing_printer[0]
+                        generator = BitmapGenerator(
+                            printer_info["width"], 
+                            printer_info["height"], 
+                            printer_info["dpi"],
+                            f"bitmap_{ip}_{name}.bmp"
+                        )
+                        generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
+                        
+                        # Return the generated bitmap file
+                        bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
+                        if os.path.exists(bitmap_path):
+                            return send_file(bitmap_path, mimetype='image/bmp')
+                        else:
+                            return jsonify({"message": "Settings saved successfully"})
+                    except Exception as e:
+                        print(f"Bitmap generation error: {e}")
+                        return jsonify({"message": "Settings saved, but bitmap generation failed"})
+                else:
+                    return jsonify({"error": "Failed to save settings"}), 500
+                
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/bitmap-settings/get", methods=['POST'])
+        def get_bitmap_settings():
+            try:
+                data = request.get_json()
+                ip = data.get('ip')
+                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
+                name = data.get('name', None)
+                
+                if not ip:
+                    return jsonify({"error": "IP is required"}), 400
+                
+                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
+                if printer_name:
+                    # Printer name'e göre kontrol et
+                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    # IP'yi de kontrol et (güvenlik için)
+                    if existing_printer[0]["ip"] != ip:
+                        return jsonify({"error": "Printer IP mismatch"}), 400
+                else:
+                    # Geriye dönük uyumluluk: IP'ye göre bul
+                    existing_printer = self.application.printers.get_printer_by_ip(ip)
+                    if not existing_printer:
+                        return jsonify({"error": "Printer not found"}), 404
+                    printer_name = existing_printer[0]["name"]
+                
+                print(f"Getting bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
+                
+                if name:
+                    settings = self.application.printers.get_bitmap_settings(ip, printer_name, name)
+                else:
+                    settings = self.application.printers.get_bitmap_settings(ip, printer_name)
+                
+                print(f"Found settings: {settings}")
+                
+                if settings:
+                    if name and len(settings) > 0:
+                        # Return specific settings
+                        settings_data = json.loads(settings[0]["settings_data"])
+                        return jsonify({
+                            "found": True,
+                            "settings": settings_data,
+                            "name": settings[0]["name"],
+                            "created_at": settings[0]["created_at"],
+                            "updated_at": settings[0]["updated_at"]
+                        })
+                    else:
+                        # Return all settings for this printer
+                        result = []
+                        for setting in settings:
+                            result.append({
+                                "id": setting["id"],
+                                "name": setting["name"],
+                                "settings": json.loads(setting["settings_data"]),
+                                "created_at": setting["created_at"],
+                                "updated_at": setting["updated_at"]
+                            })
+                        return jsonify({
+                            "found": True,
+                            "settings_list": result
+                        })
+                else:
+                    return jsonify({"found": False, "message": "No settings found"})
+                    
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+
+        @self.app.route("/api/bitmap-settings/delete", methods=['POST'])
+        def delete_bitmap_settings():
+            try:
+                data = request.get_json()
+                ip = data.get('ip')
+                name = data.get('name')
+                
+                if not ip or not name:
+                    return jsonify({"error": "IP and name are required"}), 400
+                
+                # Get printer name from IP
+                existing_printer = self.application.printers.get_printer_by_ip(ip)
+                if not existing_printer:
+                    return jsonify({"error": "Printer not found"}), 404
+                
+                printer_name = existing_printer[0]["name"]
+                
+                success = self.application.printers.delete_bitmap_settings(ip, printer_name, name)
+                
+                if success:
+                    return jsonify({"message": "Settings deleted successfully"})
+                else:
+                    return jsonify({"error": "Failed to delete settings"}), 500
+                    
+            except Exception as e:
+                return jsonify({"error": str(e)}), 500
+        
+        # Catch-all route for React Router (SPA support) - MUST BE LAST
+        @self.app.route('/<path:path>')
+        def catch_all(path):
+            # API routes should not be caught
+            if path.startswith('api/'):
+                return jsonify({"error": "API endpoint not found"}), 404
+            # Serve React app for all other routes
+            return render_template("index.html")
+
     def print_yan_etiket_normal(self, is_arcelik, payload, sap_data):
         try:
             if is_arcelik:
@@ -818,267 +1076,6 @@ class FlaskModule:
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-
-        @self.app.route("/api/testApplication/print", methods=['POST'])
-        def test_application_print():
-            try:
-                payload = request.get_json(silent=True) or {}
-
-                serial_number = payload.get("SERIAL_NUMBER") or ""
-                if not serial_number:
-                    return jsonify({"error": "Serial number is required"}), 400
-
-                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
-                if not sap_data:
-                    return jsonify({"error": "SAP data not found"}), 404
-
-                is_arcelik = sap_data.get("LOGO_NAME") == "arcelikbywat_logo"
-
-                # Normal etiketi yazdır
-                result_normal = self.print_yan_etiket_normal(is_arcelik, payload, sap_data)
-                # Helper fonksiyon tuple döndürüyorsa (response, status_code) kontrol et
-                if isinstance(result_normal, tuple):
-                    response, status_code = result_normal
-                    if status_code != 200:
-                        # Hata durumu - hata mesajını döndür
-                        return result_normal
-                
-                # Eğer arçelik ise arçelik etiketini de yazdır
-                if is_arcelik:
-                    result_arcelik = self.print_yan_etiket_arcelik(payload, sap_data)
-                    if isinstance(result_arcelik, tuple):
-                        response, status_code = result_arcelik
-                        if status_code != 200:
-                            # Hata durumu
-                            return result_arcelik
-                    return jsonify({"message": "Both labels printed successfully (normal + arcelik)"})
-                else:
-                    return jsonify({"message": "Label printed successfully"})
-                    
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-
-
-
-        @self.app.route("/api/barcodeScanner/print", methods=['POST'])
-        def barcode_scanner_print():
-            try:
-                data = request.get_json()
-                serial_number = data.get('SERIAL_NUMBER', "")
-                print(f"/api/barcodeScanner/print Serial number: {serial_number}")
-                if not serial_number:
-                    return jsonify({"error": "Serial number not found"}), 404
-                    return False
-
-                sap_data = self.application.utils.get_sap_device_knowledge(serial_number)
-                if not sap_data:
-                    return jsonify({"error": "SAP data not found"}), 404
-                print(f"SAP data: {sap_data}")
-                self.application.utils.print_paket(serial_number, sap_data)
-                pin_code = sap_data.get("PIN_CODE", "")
-                if pin_code:
-                    self.application.utils.print_qr(serial_number, sap_data)
-
-                return jsonify({"message": "Barcode printed successfully"})
-            except Exception as e:
-                print(f"barcode_scanner_print error: {e}")
-                return jsonify({"error": str(e)}), 500
-
-        @self.app.route("/api/bitmap-settings", methods=['POST'])
-        def save_bitmap_settings():
-            try:
-                data = request.get_json()
-                ip = data.get('ip')
-                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
-                name = data.get('name', 'default')  # Default name if not provided
-                
-                if not ip:
-                    return jsonify({"error": "IP is required"}), 400
-                
-                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
-                if printer_name:
-                    # Printer name'e göre kontrol et
-                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
-                    if not existing_printer:
-                        return jsonify({"error": "Printer not found"}), 404
-                    # IP'yi de kontrol et (güvenlik için)
-                    if existing_printer[0]["ip"] != ip:
-                        return jsonify({"error": "Printer IP mismatch"}), 400
-                else:
-                    # Geriye dönük uyumluluk: IP'ye göre bul
-                    existing_printer = self.application.printers.get_printer_by_ip(ip)
-                    if not existing_printer:
-                        return jsonify({"error": "Printer not found"}), 404
-                    printer_name = existing_printer[0]["name"]
-                
-                # Get bitmap settings data
-                text_items = data.get('textItems', [])
-                value_items = data.get('valueItems', [])
-                icon_items = data.get('iconItems', [])
-                barcode_items = data.get('barcodeItems', [])
-                
-                # Debug logging
-                print(f"Saving bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
-                print(f"Text items count: {len(text_items)}")
-                print(f"Value items count: {len(value_items)}")
-                print(f"Icon items count: {len(icon_items)}")
-                print(f"Barcode items count: {len(barcode_items)}")
-                
-                # Log icon items details
-                for i, icon_item in enumerate(icon_items):
-                    icon_file_size = len(icon_item.get('iconFile', '')) if icon_item.get('iconFile') else 0
-                    print(f"Icon item {i}: x={icon_item.get('x', 0)}, y={icon_item.get('y', 0)}, "
-                          f"width={icon_item.get('width', 0)}, height={icon_item.get('height', 0)}, "
-                          f"iconFile size={icon_file_size} chars")
-                
-                # Log barcode items details
-                for i, barcode_item in enumerate(barcode_items):
-                    print(f"Barcode item {i}: x={barcode_item.get('x', 0)}, y={barcode_item.get('y', 0)}, "
-                          f"data='{barcode_item.get('data', '')}', format={barcode_item.get('format', '')}")
-                
-                # Create settings data structure
-                settings_data = {
-                    "textItems": text_items,
-                    "valueItems": value_items,
-                    "iconItems": icon_items,
-                    "barcodeItems": barcode_items
-                }
-                success = self.application.printers.save_bitmap_settings(
-                    ip, printer_name, name, json.dumps(settings_data)
-                )
-                print(f"Save result: {success}")
-                
-                if success:
-                    # Generate bitmap file
-                    try:
-                        printer_info = existing_printer[0]
-                        generator = BitmapGenerator(
-                            printer_info["width"], 
-                            printer_info["height"], 
-                            printer_info["dpi"],
-                            f"bitmap_{ip}_{name}.bmp"
-                        )
-                        generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
-                        
-                        # Return the generated bitmap file
-                        bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
-                        if os.path.exists(bitmap_path):
-                            return send_file(bitmap_path, mimetype='image/bmp')
-                        else:
-                            return jsonify({"message": "Settings saved successfully"})
-                    except Exception as e:
-                        print(f"Bitmap generation error: {e}")
-                        return jsonify({"message": "Settings saved, but bitmap generation failed"})
-                else:
-                    return jsonify({"error": "Failed to save settings"}), 500
-                
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-
-        @self.app.route("/api/bitmap-settings/get", methods=['POST'])
-        def get_bitmap_settings():
-            try:
-                data = request.get_json()
-                ip = data.get('ip')
-                printer_name = data.get('printerName')  # Frontend'ten gelen printer name
-                name = data.get('name', None)
-                
-                if not ip:
-                    return jsonify({"error": "IP is required"}), 400
-                
-                # Eğer printerName gönderilmişse onu kullan, yoksa IP'ye göre bul
-                if printer_name:
-                    # Printer name'e göre kontrol et
-                    existing_printer = self.application.printers.get_printer_by_name(printer_name)
-                    if not existing_printer:
-                        return jsonify({"error": "Printer not found"}), 404
-                    # IP'yi de kontrol et (güvenlik için)
-                    if existing_printer[0]["ip"] != ip:
-                        return jsonify({"error": "Printer IP mismatch"}), 400
-                else:
-                    # Geriye dönük uyumluluk: IP'ye göre bul
-                    existing_printer = self.application.printers.get_printer_by_ip(ip)
-                    if not existing_printer:
-                        return jsonify({"error": "Printer not found"}), 404
-                    printer_name = existing_printer[0]["name"]
-                
-                print(f"Getting bitmap settings for {ip} (printer: {printer_name}) with settings name: {name}")
-                
-                if name:
-                    settings = self.application.printers.get_bitmap_settings(ip, printer_name, name)
-                else:
-                    settings = self.application.printers.get_bitmap_settings(ip, printer_name)
-                
-                print(f"Found settings: {settings}")
-                
-                if settings:
-                    if name and len(settings) > 0:
-                        # Return specific settings
-                        settings_data = json.loads(settings[0]["settings_data"])
-                        return jsonify({
-                            "found": True,
-                            "settings": settings_data,
-                            "name": settings[0]["name"],
-                            "created_at": settings[0]["created_at"],
-                            "updated_at": settings[0]["updated_at"]
-                        })
-                    else:
-                        # Return all settings for this printer
-                        result = []
-                        for setting in settings:
-                            result.append({
-                                "id": setting["id"],
-                                "name": setting["name"],
-                                "settings": json.loads(setting["settings_data"]),
-                                "created_at": setting["created_at"],
-                                "updated_at": setting["updated_at"]
-                            })
-                        return jsonify({
-                            "found": True,
-                            "settings_list": result
-                        })
-                else:
-                    return jsonify({"found": False, "message": "No settings found"})
-                    
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-
-        @self.app.route("/api/bitmap-settings/delete", methods=['POST'])
-        def delete_bitmap_settings():
-            try:
-                data = request.get_json()
-                ip = data.get('ip')
-                name = data.get('name')
-                
-                if not ip or not name:
-                    return jsonify({"error": "IP and name are required"}), 400
-                
-                # Get printer name from IP
-                existing_printer = self.application.printers.get_printer_by_ip(ip)
-                if not existing_printer:
-                    return jsonify({"error": "Printer not found"}), 404
-                
-                printer_name = existing_printer[0]["name"]
-                
-                success = self.application.printers.delete_bitmap_settings(ip, printer_name, name)
-                
-                if success:
-                    return jsonify({"message": "Settings deleted successfully"})
-                else:
-                    return jsonify({"error": "Failed to delete settings"}), 500
-                    
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
-        
-        # Catch-all route for React Router (SPA support) - MUST BE LAST
-        @self.app.route('/<path:path>')
-        def catch_all(path):
-            # API routes should not be caught
-            if path.startswith('api/'):
-                return jsonify({"error": "API endpoint not found"}), 404
-            # Serve React app for all other routes
-            return render_template("index.html")
-        
     def run(self):
         try:
             print("Flask server starting on http://127.0.0.1:8088")
