@@ -447,6 +447,10 @@
    'C:\\Users\\syucedag\\OneDrive - Dias Bilişim ve Teknoloji Hizmetleri '
    'A.Ş\\Desktop\\all_projects\\sevda\\mygit\\heraPrinterApplication\\backend\\databaseModule\\printers.py',
    'PYMODULE'),
+  ('backend.flaskModule',
+   'C:\\Users\\syucedag\\OneDrive - Dias Bilişim ve Teknoloji Hizmetleri '
+   'A.Ş\\Desktop\\all_projects\\sevda\\mygit\\heraPrinterApplication\\backend\\flaskModule.py',
+   'PYMODULE'),
   ('backend.tscPrinterModule',
    'C:\\Users\\syucedag\\OneDrive - Dias Bilişim ve Teknoloji Hizmetleri '
    'A.Ş\\Desktop\\all_projects\\sevda\\mygit\\heraPrinterApplication\\backend\\tscPrinterModule.py',

@@ -334,489 +334,489 @@ class FlaskModule:
                 return jsonify({"error": str(e)}), 500
 
     def print_yan_etiket_normal(self, is_arcelik, payload, sap_data):
-            try:
-                if is_arcelik:
-                    sap_data["LOGO_NAME"] = "hera_logo"
+        try:
+            if is_arcelik:
+                sap_data["LOGO_NAME"] = "hera_logo"
 
+            printer_name = "ARKA MASA"
+
+            serial_number = payload.get("SERIAL_NUMBER") or ""
+            if not serial_number:
+                return jsonify({"error": "Serial number is required"}), 400
+            
+            test_device = payload.get("TEST_DEVICE") or ""
+            if not test_device:
+                return jsonify({"error": "Test device is required"}), 400
+
+            if test_device == 2:
                 printer_name = "ARKA MASA"
+            elif test_device == 1:
+                printer_name = "ÖN MASA"
+            else:
+                return jsonify({"error": "Invalid test device"}), 400
 
-                serial_number = payload.get("SERIAL_NUMBER") or ""
-                if not serial_number:
-                    return jsonify({"error": "Serial number is required"}), 400
-                
-                test_device = payload.get("TEST_DEVICE") or ""
-                if not test_device:
-                    return jsonify({"error": "Test device is required"}), 400
+            data = {
+                "PRODUCT_CODE": sap_data.get("PRODUCT_CODE") or "",
+                "MODEL_NUMBER": sap_data.get("MODEL_NUMBER") or "",
+                "SYSTEM": sap_data.get("SYSTEM") or "",
+                "RATED_VOLTAGE": sap_data.get("RATED_VOLTAGE") or "",
+                "RATED_POWER": sap_data.get("RATED_POWER") or "",
+                "OPERATING_TEMP": sap_data.get("OPERATING_TEMP") or "",
+                "MANUFACTURER": sap_data.get("MANUFACTURER") or "",
+                "BT_MAC": sap_data.get("BT_MAC") or "",
+                "LAN_MAC": sap_data.get("LAN_MAC") or "",
+                "IMEI_NUMBER": sap_data.get("IMEI_NUMBER") or "",
+                "SITE_ID": sap_data.get("SITE_ID") or "",
+                "DATE_NUMBER": datetime.now().strftime("%d/%m/%Y"),
+                "SERIAL_NUMBER": serial_number,
+                "BODY_COLOR": sap_data.get("BODY_COLOR") or "",
+                "EAN_NUMBER": sap_data.get("EAN_NUMBER") or "",
+                "mid": sap_data.get("mid") or False,
+                "mid_year": sap_data.get("mid_year") or "",
+                "mid_lab": sap_data.get("mid_lab") or "",
+                "ip": sap_data.get("IP") or "",
+                "BT_NAME": sap_data.get("BT_NAME") or "",
+                "PIN_CODE": sap_data.get("PIN_CODE") or "",
+                "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
+                "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
+                "OemProductCode": sap_data.get("OemProductCode") or "",
+                "OemProductCode2": sap_data.get("OemProductCode2") or "",
+                "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
+            }
 
-                if test_device == 2:
-                    printer_name = "ARKA MASA"
-                elif test_device == 1:
-                    printer_name = "ÖN MASA"
-                else:
-                    return jsonify({"error": "Invalid test device"}), 400
+            ip = self.application.printers.get_printer_ip_by_name(printer_name)
+            # Printer name'e göre bitmap ayarlarını al
+            settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
+            if not settings_data:
+                # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
+                settings_data = self.application.printers.get_printer_data_by_ip(ip)
+            if not settings_data:
+                return jsonify({"error": "Bitmap settings not found"}), 404
+            settings_data_json = json.loads(settings_data)
+            text_items = settings_data_json.get('textItems', [])
+            value_items = settings_data_json.get('valueItems', [])
+            icon_items = settings_data_json.get('iconItems', [])
+            barcode_items = settings_data_json.get('barcodeItems', [])
+            
+            settings_data = {
+                "textItems": text_items,
+                "valueItems": value_items,
+                "iconItems": icon_items,
+                "barcodeItems": barcode_items
+            }
 
-                data = {
-                    "PRODUCT_CODE": sap_data.get("PRODUCT_CODE") or "",
-                    "MODEL_NUMBER": sap_data.get("MODEL_NUMBER") or "",
-                    "SYSTEM": sap_data.get("SYSTEM") or "",
-                    "RATED_VOLTAGE": sap_data.get("RATED_VOLTAGE") or "",
-                    "RATED_POWER": sap_data.get("RATED_POWER") or "",
-                    "OPERATING_TEMP": sap_data.get("OPERATING_TEMP") or "",
-                    "MANUFACTURER": sap_data.get("MANUFACTURER") or "",
-                    "BT_MAC": sap_data.get("BT_MAC") or "",
-                    "LAN_MAC": sap_data.get("LAN_MAC") or "",
-                    "IMEI_NUMBER": sap_data.get("IMEI_NUMBER") or "",
-                    "SITE_ID": sap_data.get("SITE_ID") or "",
-                    "DATE_NUMBER": datetime.now().strftime("%d/%m/%Y"),
-                    "SERIAL_NUMBER": serial_number,
-                    "BODY_COLOR": sap_data.get("BODY_COLOR") or "",
-                    "EAN_NUMBER": sap_data.get("EAN_NUMBER") or "",
-                    "mid": sap_data.get("mid") or False,
-                    "mid_year": sap_data.get("mid_year") or "",
-                    "mid_lab": sap_data.get("mid_lab") or "",
-                    "ip": sap_data.get("IP") or "",
-                    "BT_NAME": sap_data.get("BT_NAME") or "",
-                    "PIN_CODE": sap_data.get("PIN_CODE") or "",
-                    "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
-                    "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
-                    "OemProductCode": sap_data.get("OemProductCode") or "",
-                    "OemProductCode2": sap_data.get("OemProductCode2") or "",
-                    "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
-                }
-
-                ip = self.application.printers.get_printer_ip_by_name(printer_name)
-                # Printer name'e göre bitmap ayarlarını al
-                settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
-                if not settings_data:
-                    # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
-                    settings_data = self.application.printers.get_printer_data_by_ip(ip)
-                if not settings_data:
-                    return jsonify({"error": "Bitmap settings not found"}), 404
-                settings_data_json = json.loads(settings_data)
-                text_items = settings_data_json.get('textItems', [])
-                value_items = settings_data_json.get('valueItems', [])
-                icon_items = settings_data_json.get('iconItems', [])
-                barcode_items = settings_data_json.get('barcodeItems', [])
-                
-                settings_data = {
-                    "textItems": text_items,
-                    "valueItems": value_items,
-                    "iconItems": icon_items,
-                    "barcodeItems": barcode_items
-                }
-
-                for value_data in value_items:
-                    if value_data["valueId"] == "SERIAL_NUMBER":
-                        value_data["content"] = data.get("SERIAL_NUMBER", "")
-                    elif value_data["valueId"] == "DATE_NUMBER":
-                        value_data["content"] = data.get("DATE_NUMBER", "")
-                    elif value_data["valueId"] == "SITE_ID":
-                        value_data["content"] = data.get("SITE_ID", "")
-                    elif value_data["valueId"] == "IMEI_NUMBER":
-                        value_data["content"] = data.get("IMEI_NUMBER", "")
-                    elif value_data["valueId"] == "LAN_MAC":
-                        value_data["content"] = (data.get("LAN_MAC", "") or "").upper()
-                    elif value_data["valueId"] == "BT_MAC":
-                        value_data["content"] = (data.get("BT_MAC", "") or "").upper()
-                    elif value_data["valueId"] == "PRODUCT_CODE":
-                        value_data["content"] = data.get("PRODUCT_CODE", "")
-                    elif value_data["valueId"] == "MODEL_NUMBER":
-                        value_data["content"] = data.get("MODEL_NUMBER", "")
-                    elif value_data["valueId"] == "SYSTEM":
-                        value_data["content"] = data.get("SYSTEM", "")
-                    elif value_data["valueId"] == "RATED_VOLTAGE":
-                        value_data["content"] = data.get("RATED_VOLTAGE", "")
-                    elif value_data["valueId"] == "RATED_POWER":
-                        value_data["content"] = data.get("RATED_POWER", "")
-                    elif value_data["valueId"] == "OPERATING_TEMP":
-                        value_data["content"] = data.get("OPERATING_TEMP", "")
-                    elif value_data["valueId"] == "MANUFACTURER":
-                        value_data["content"] = data.get("MANUFACTURER", "")
-                    elif value_data["valueId"] == "BT_NAME":
-                        value_data["content"] = data.get("BT_NAME", "")
-                    elif value_data["valueId"] == "PIN_CODE":
-                        value_data["content"] = data.get("PIN_CODE", "")
-                    elif value_data["valueId"] == "LOGO_NAME":
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
-                        print(f"Image path: {image_path}")
-                        if os.path.exists(image_path):
-                            with open(image_path, "rb") as img_file:
-                                encoded = base64.b64encode(img_file.read()).decode("ascii")
-                            value_data["type"] = "image"
-                            value_data["content"] = ""
-                            value_data["imageFile"] = encoded
-                        else:
-                            print(f"Image not found: {image_path}")
-                    elif value_data["valueId"] == "mid_lab":
-                        value_data["content"] = data.get("mid_lab", "")
-                    elif value_data["valueId"] == "IP":
-                        # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
-                        ip_value = data.get("ip", "")
-                        if ip_value:
-                            try:
-                                # Proje kökü: backend klasörünün bir üstü
-                                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                                images_dir = os.path.join(project_root, "database", "images")
-                                image_path = os.path.join(images_dir, f"{ip_value}.png")
-
-                                if os.path.exists(image_path):
-                                    with open(image_path, "rb") as img_file:
-                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
-
-                                    # Bu value item'i image tipine çevir
-                                    value_data["type"] = "image"
-                                    value_data["content"] = ""  # text kullanılmayacak
-                                    value_data["imageFile"] = encoded
-                                    # imageWidth / imageHeight ayarlıysa tasarımdaki değerler kullanılacak
-                                else:
-                                    # Dosya yoksa fallback olarak text yaz
-                                    value_data["content"] = ip_value
-                            except Exception as e:
-                                print(f"IP image load error: {e}")
-                                # Fallback: IP değerini text olarak göster
-                                value_data["content"] = data.get("ip", "")
-                    elif value_data["valueId"] == "MID":
-                        # MID varsa: MID M{mid_year}.png göster
+            for value_data in value_items:
+                if value_data["valueId"] == "SERIAL_NUMBER":
+                    value_data["content"] = data.get("SERIAL_NUMBER", "")
+                elif value_data["valueId"] == "DATE_NUMBER":
+                    value_data["content"] = data.get("DATE_NUMBER", "")
+                elif value_data["valueId"] == "SITE_ID":
+                    value_data["content"] = data.get("SITE_ID", "")
+                elif value_data["valueId"] == "IMEI_NUMBER":
+                    value_data["content"] = data.get("IMEI_NUMBER", "")
+                elif value_data["valueId"] == "LAN_MAC":
+                    value_data["content"] = (data.get("LAN_MAC", "") or "").upper()
+                elif value_data["valueId"] == "BT_MAC":
+                    value_data["content"] = (data.get("BT_MAC", "") or "").upper()
+                elif value_data["valueId"] == "PRODUCT_CODE":
+                    value_data["content"] = data.get("PRODUCT_CODE", "")
+                elif value_data["valueId"] == "MODEL_NUMBER":
+                    value_data["content"] = data.get("MODEL_NUMBER", "")
+                elif value_data["valueId"] == "SYSTEM":
+                    value_data["content"] = data.get("SYSTEM", "")
+                elif value_data["valueId"] == "RATED_VOLTAGE":
+                    value_data["content"] = data.get("RATED_VOLTAGE", "")
+                elif value_data["valueId"] == "RATED_POWER":
+                    value_data["content"] = data.get("RATED_POWER", "")
+                elif value_data["valueId"] == "OPERATING_TEMP":
+                    value_data["content"] = data.get("OPERATING_TEMP", "")
+                elif value_data["valueId"] == "MANUFACTURER":
+                    value_data["content"] = data.get("MANUFACTURER", "")
+                elif value_data["valueId"] == "BT_NAME":
+                    value_data["content"] = data.get("BT_NAME", "")
+                elif value_data["valueId"] == "PIN_CODE":
+                    value_data["content"] = data.get("PIN_CODE", "")
+                elif value_data["valueId"] == "LOGO_NAME":
+                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    images_dir = os.path.join(project_root, "database", "images")
+                    image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
+                    print(f"Image path: {image_path}")
+                    if os.path.exists(image_path):
+                        with open(image_path, "rb") as img_file:
+                            encoded = base64.b64encode(img_file.read()).decode("ascii")
+                        value_data["type"] = "image"
+                        value_data["content"] = ""
+                        value_data["imageFile"] = encoded
+                    else:
+                        print(f"Image not found: {image_path}")
+                elif value_data["valueId"] == "mid_lab":
+                    value_data["content"] = data.get("mid_lab", "")
+                elif value_data["valueId"] == "IP":
+                    # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
+                    ip_value = data.get("ip", "")
+                    if ip_value:
                         try:
+                            # Proje kökü: backend klasörünün bir üstü
                             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                             images_dir = os.path.join(project_root, "database", "images")
-                            
-                            has_mid = data.get("mid", False)
-                            mid_year = data.get("mid_year", "")
-                            
-                            if has_mid and mid_year:
-                                image_filename = f"MID M{mid_year}.png"
-                                image_path = os.path.join(images_dir, image_filename)
-                                
-                                if os.path.exists(image_path):
-                                    with open(image_path, "rb") as img_file:
-                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
-                                    
-                                    value_data["type"] = "image"
-                                    value_data["content"] = ""
-                                    value_data["imageFile"] = encoded
-                                else:
-                                    # MID dosyası yoksa fallback olarak text yaz
-                                    value_data["type"] = "text"
-                                    value_data["imageFile"] = ""
-                                    value_data["content"] = f"MID M{mid_year}"
+                            image_path = os.path.join(images_dir, f"{ip_value}.png")
+
+                            if os.path.exists(image_path):
+                                with open(image_path, "rb") as img_file:
+                                    encoded = base64.b64encode(img_file.read()).decode("ascii")
+
+                                # Bu value item'i image tipine çevir
+                                value_data["type"] = "image"
+                                value_data["content"] = ""  # text kullanılmayacak
+                                value_data["imageFile"] = encoded
+                                # imageWidth / imageHeight ayarlıysa tasarımdaki değerler kullanılacak
                             else:
-                                # MID yoksa bu value item'ı boş bırak ve image'i temizle
+                                # Dosya yoksa fallback olarak text yaz
+                                value_data["content"] = ip_value
+                        except Exception as e:
+                            print(f"IP image load error: {e}")
+                            # Fallback: IP değerini text olarak göster
+                            value_data["content"] = data.get("ip", "")
+                elif value_data["valueId"] == "MID":
+                    # MID varsa: MID M{mid_year}.png göster
+                    try:
+                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                        images_dir = os.path.join(project_root, "database", "images")
+                        
+                        has_mid = data.get("mid", False)
+                        mid_year = data.get("mid_year", "")
+                        
+                        if has_mid and mid_year:
+                            image_filename = f"MID M{mid_year}.png"
+                            image_path = os.path.join(images_dir, image_filename)
+                            
+                            if os.path.exists(image_path):
+                                with open(image_path, "rb") as img_file:
+                                    encoded = base64.b64encode(img_file.read()).decode("ascii")
+                                
+                                value_data["type"] = "image"
+                                value_data["content"] = ""
+                                value_data["imageFile"] = encoded
+                            else:
+                                # MID dosyası yoksa fallback olarak text yaz
                                 value_data["type"] = "text"
                                 value_data["imageFile"] = ""
-                                value_data["content"] = ""
-                        except Exception as e:
-                            print(f"MID image load error: {e}")
+                                value_data["content"] = f"MID M{mid_year}"
+                        else:
+                            # MID yoksa bu value item'ı boş bırak ve image'i temizle
                             value_data["type"] = "text"
                             value_data["imageFile"] = ""
                             value_data["content"] = ""
-                    elif value_data["valueId"] == "OEM_COMPANY_NAME":
-                        value_data["content"] = data.get("OEM_COMPANY_NAME", "")
-                    elif value_data["valueId"] == "OemProductCode":
-                        value_data["content"] = data.get("OemProductCode", "")
-                    elif value_data["valueId"] == "OemProductCodeDefinition":
-                        value_data["content"] = data.get("OemProductCodeDefinition", "")
+                    except Exception as e:
+                        print(f"MID image load error: {e}")
+                        value_data["type"] = "text"
+                        value_data["imageFile"] = ""
+                        value_data["content"] = ""
+                elif value_data["valueId"] == "OEM_COMPANY_NAME":
+                    value_data["content"] = data.get("OEM_COMPANY_NAME", "")
+                elif value_data["valueId"] == "OemProductCode":
+                    value_data["content"] = data.get("OemProductCode", "")
+                elif value_data["valueId"] == "OemProductCodeDefinition":
+                    value_data["content"] = data.get("OemProductCodeDefinition", "")
 
-                # Barkod alanlarını seri numarası ile doldur
-                for barcode_item in barcode_items:
-                    barcode_item["data"] = data.get("SERIAL_NUMBER", "")
+            # Barkod alanlarını seri numarası ile doldur
+            for barcode_item in barcode_items:
+                barcode_item["data"] = data.get("SERIAL_NUMBER", "")
 
-                # Imei 18, 21
-                # Lan mac 19, 22
-                # bt mac 20, 23
+            # Imei 18, 21
+            # Lan mac 19, 22
+            # bt mac 20, 23
 
-                # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa ilgili textItems'ları filtrele
-                bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
-                lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
-                imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
-                
-                # Filtrelenecek text item id'lerini belirle
-                text_ids_to_filter = []
-                
-                # IMEI_NUMBER yoksa 18 ve 21'i filtrele
-                if not imei_exists:
-                    text_ids_to_filter.extend([18, 21])
-                
-                # LAN_MAC yoksa 19 ve 22'yi filtrele
-                if not lan_mac_exists:
-                    text_ids_to_filter.extend([19, 22])
-                
-                # BT_MAC yoksa 20 ve 23'ü filtrele
-                if not bt_mac_exists:
-                    text_ids_to_filter.extend([20, 23])
-                
-                # Filtreleme işlemini yap
-                if text_ids_to_filter:
-                    text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
+            # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa ilgili textItems'ları filtrele
+            bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
+            lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
+            imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
+            
+            # Filtrelenecek text item id'lerini belirle
+            text_ids_to_filter = []
+            
+            # IMEI_NUMBER yoksa 18 ve 21'i filtrele
+            if not imei_exists:
+                text_ids_to_filter.extend([18, 21])
+            
+            # LAN_MAC yoksa 19 ve 22'yi filtrele
+            if not lan_mac_exists:
+                text_ids_to_filter.extend([19, 22])
+            
+            # BT_MAC yoksa 20 ve 23'ü filtrele
+            if not bt_mac_exists:
+                text_ids_to_filter.extend([20, 23])
+            
+            # Filtreleme işlemini yap
+            if text_ids_to_filter:
+                text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
 
-                printers = self.application.printers.search_printers_by_name(printer_name)
-                width = printers[0]["width"]
-                height = printers[0]["height"]
-                dpi = printers[0]["dpi"]
-                name = "test"
+            printers = self.application.printers.search_printers_by_name(printer_name)
+            width = printers[0]["width"]
+            height = printers[0]["height"]
+            dpi = printers[0]["dpi"]
+            name = "test"
 
-                generator = BitmapGenerator(
-                    width, 
-                    height, 
-                    dpi,
-                    f"bitmap_{ip}_{name}.bmp"
-                )
-                generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
-                bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
-                if os.path.exists(bitmap_path):
-                    success = printer_manager.print_bmp(ip, bitmap_path, width, height)
-                    if success:
-                        return jsonify({"message": "Bitmap printed successfully"})
-                    else:
-                        return jsonify({"error": "Failed to print bitmap"}), 500
+            generator = BitmapGenerator(
+                width, 
+                height, 
+                dpi,
+                f"bitmap_{ip}_{name}.bmp"
+            )
+            generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
+            bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
+            if os.path.exists(bitmap_path):
+                success = printer_manager.print_bmp(ip, bitmap_path, width, height)
+                if success:
+                    return jsonify({"message": "Bitmap printed successfully"})
                 else:
-                    return jsonify({"error": "Failed to generate bitmap"}), 500
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
+                    return jsonify({"error": "Failed to print bitmap"}), 500
+            else:
+                return jsonify({"error": "Failed to generate bitmap"}), 500
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     def print_yan_etiket_arcelik(self, payload, sap_data):
-            try:
-                sap_data["LOGO_NAME"] = "arcelikbywat_logo"
+        try:
+            sap_data["LOGO_NAME"] = "arcelikbywat_logo"
 
+            printer_name = "ARÇELİK ARKA MASA"
+
+            serial_number = payload.get("SERIAL_NUMBER") or ""
+            if not serial_number:
+                return jsonify({"error": "Serial number is required"}), 400
+            
+            test_device = payload.get("TEST_DEVICE") or ""
+            if not test_device:
+                return jsonify({"error": "Test device is required"}), 400
+
+            if test_device == 2:
                 printer_name = "ARÇELİK ARKA MASA"
+            elif test_device == 1:
+                printer_name = "ARÇELİK ÖN MASA"
+            else:
+                return jsonify({"error": "Invalid test device"}), 400
 
-                serial_number = payload.get("SERIAL_NUMBER") or ""
-                if not serial_number:
-                    return jsonify({"error": "Serial number is required"}), 400
-                
-                test_device = payload.get("TEST_DEVICE") or ""
-                if not test_device:
-                    return jsonify({"error": "Test device is required"}), 400
+            data = {
+                "PRODUCT_CODE": sap_data.get("PRODUCT_CODE") or "",
+                "MODEL_NUMBER": sap_data.get("MODEL_NUMBER") or "",
+                "SYSTEM": sap_data.get("SYSTEM") or "",
+                "RATED_VOLTAGE": sap_data.get("RATED_VOLTAGE") or "",
+                "RATED_POWER": sap_data.get("RATED_POWER") or "",
+                "OPERATING_TEMP": sap_data.get("OPERATING_TEMP") or "",
+                "MANUFACTURER": sap_data.get("MANUFACTURER") or "",
+                "BT_MAC": sap_data.get("BT_MAC") or "",
+                "LAN_MAC": sap_data.get("LAN_MAC") or "",
+                "IMEI_NUMBER": sap_data.get("IMEI_NUMBER") or "",
+                "SITE_ID": sap_data.get("SITE_ID") or "",
+                "DATE_NUMBER": datetime.now().strftime("%d/%m/%Y"),
+                "SERIAL_NUMBER": serial_number,
+                "BODY_COLOR": sap_data.get("BODY_COLOR") or "",
+                "EAN_NUMBER": sap_data.get("EAN_NUMBER") or "",
+                "mid": sap_data.get("mid") or False,
+                "mid_year": sap_data.get("mid_year") or "",
+                "mid_lab": sap_data.get("mid_lab") or "",
+                "ip": sap_data.get("IP") or "",
+                "BT_NAME": sap_data.get("BT_NAME") or "",
+                "PIN_CODE": sap_data.get("PIN_CODE") or "",
+                "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
+                "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
+                "OemProductCode": sap_data.get("OemProductCode") or "",
+                "OemProductCode2": sap_data.get("OemProductCode2") or "",
+                "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
+            }
 
-                if test_device == 2:
-                    printer_name = "ARÇELİK ARKA MASA"
-                elif test_device == 1:
-                    printer_name = "ARÇELİK ÖN MASA"
-                else:
-                    return jsonify({"error": "Invalid test device"}), 400
+            ip = self.application.printers.get_printer_ip_by_name(printer_name)
+            # Printer name'e göre bitmap ayarlarını al
+            settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
+            if not settings_data:
+                # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
+                settings_data = self.application.printers.get_printer_data_by_ip(ip)
+            if not settings_data:
+                return jsonify({"error": "Bitmap settings not found"}), 404
+            settings_data_json = json.loads(settings_data)
+            text_items = settings_data_json.get('textItems', [])
+            value_items = settings_data_json.get('valueItems', [])
+            icon_items = settings_data_json.get('iconItems', [])
+            barcode_items = settings_data_json.get('barcodeItems', [])
+            
+            settings_data = {
+                "textItems": text_items,
+                "valueItems": value_items,
+                "iconItems": icon_items,
+                "barcodeItems": barcode_items
+            }
 
-                data = {
-                    "PRODUCT_CODE": sap_data.get("PRODUCT_CODE") or "",
-                    "MODEL_NUMBER": sap_data.get("MODEL_NUMBER") or "",
-                    "SYSTEM": sap_data.get("SYSTEM") or "",
-                    "RATED_VOLTAGE": sap_data.get("RATED_VOLTAGE") or "",
-                    "RATED_POWER": sap_data.get("RATED_POWER") or "",
-                    "OPERATING_TEMP": sap_data.get("OPERATING_TEMP") or "",
-                    "MANUFACTURER": sap_data.get("MANUFACTURER") or "",
-                    "BT_MAC": sap_data.get("BT_MAC") or "",
-                    "LAN_MAC": sap_data.get("LAN_MAC") or "",
-                    "IMEI_NUMBER": sap_data.get("IMEI_NUMBER") or "",
-                    "SITE_ID": sap_data.get("SITE_ID") or "",
-                    "DATE_NUMBER": datetime.now().strftime("%d/%m/%Y"),
-                    "SERIAL_NUMBER": serial_number,
-                    "BODY_COLOR": sap_data.get("BODY_COLOR") or "",
-                    "EAN_NUMBER": sap_data.get("EAN_NUMBER") or "",
-                    "mid": sap_data.get("mid") or False,
-                    "mid_year": sap_data.get("mid_year") or "",
-                    "mid_lab": sap_data.get("mid_lab") or "",
-                    "ip": sap_data.get("IP") or "",
-                    "BT_NAME": sap_data.get("BT_NAME") or "",
-                    "PIN_CODE": sap_data.get("PIN_CODE") or "",
-                    "LOGO_NAME": sap_data.get("LOGO_NAME") or "",
-                    "OEM_COMPANY_NAME": sap_data.get("OEM_COMPANY_NAME") or "",
-                    "OemProductCode": sap_data.get("OemProductCode") or "",
-                    "OemProductCode2": sap_data.get("OemProductCode2") or "",
-                    "OemProductCodeDefinition": sap_data.get("OemProductCodeDefinition") or "",
-                }
-
-                ip = self.application.printers.get_printer_ip_by_name(printer_name)
-                # Printer name'e göre bitmap ayarlarını al
-                settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
-                if not settings_data:
-                    # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
-                    settings_data = self.application.printers.get_printer_data_by_ip(ip)
-                if not settings_data:
-                    return jsonify({"error": "Bitmap settings not found"}), 404
-                settings_data_json = json.loads(settings_data)
-                text_items = settings_data_json.get('textItems', [])
-                value_items = settings_data_json.get('valueItems', [])
-                icon_items = settings_data_json.get('iconItems', [])
-                barcode_items = settings_data_json.get('barcodeItems', [])
-                
-                settings_data = {
-                    "textItems": text_items,
-                    "valueItems": value_items,
-                    "iconItems": icon_items,
-                    "barcodeItems": barcode_items
-                }
-
-                for value_data in value_items:
-                    if value_data["valueId"] == "SERIAL_NUMBER":
-                        value_data["content"] = self.application.utils.create_arcelik_serial_number(data.get("OemProductCode2"), data.get("SERIAL_NUMBER"))
-                    elif value_data["valueId"] == "DATE_NUMBER":
-                        value_data["content"] = data.get("DATE_NUMBER", "")
-                    elif value_data["valueId"] == "SITE_ID":
-                        value_data["content"] = data.get("SITE_ID", "")
-                    elif value_data["valueId"] == "IMEI_NUMBER":
-                        value_data["content"] = data.get("IMEI_NUMBER", "")
-                    elif value_data["valueId"] == "LAN_MAC":
-                        value_data["content"] = (data.get("LAN_MAC", "") or "").upper()
-                    elif value_data["valueId"] == "BT_MAC":
-                        value_data["content"] = (data.get("BT_MAC", "") or "").upper()
-                    elif value_data["valueId"] == "PRODUCT_CODE":
-                        value_data["content"] = data.get("PRODUCT_CODE", "")
-                    elif value_data["valueId"] == "MODEL_NUMBER":
-                        value_data["content"] = data.get("MODEL_NUMBER", "")
-                    elif value_data["valueId"] == "SYSTEM":
-                        value_data["content"] = data.get("SYSTEM", "")
-                    elif value_data["valueId"] == "RATED_VOLTAGE":
-                        value_data["content"] = data.get("RATED_VOLTAGE", "")
-                    elif value_data["valueId"] == "RATED_POWER":
-                        value_data["content"] = data.get("RATED_POWER", "")
-                    elif value_data["valueId"] == "OPERATING_TEMP":
-                        value_data["content"] = data.get("OPERATING_TEMP", "")
-                    elif value_data["valueId"] == "MANUFACTURER":
-                        value_data["content"] = data.get("MANUFACTURER", "")
-                    elif value_data["valueId"] == "BT_NAME":
-                        value_data["content"] = data.get("BT_NAME", "")
-                    elif value_data["valueId"] == "PIN_CODE":
-                        value_data["content"] = data.get("PIN_CODE", "")
-                    elif value_data["valueId"] == "LOGO_NAME":
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
-                        print(f"Image path: {image_path}")
-                        if os.path.exists(image_path):
-                            with open(image_path, "rb") as img_file:
-                                encoded = base64.b64encode(img_file.read()).decode("ascii")
-                            value_data["type"] = "image"
-                            value_data["content"] = ""
-                            value_data["imageFile"] = encoded
-                        else:
-                            print(f"Image not found: {image_path}")
-                    elif value_data["valueId"] == "mid_lab":
-                        value_data["content"] = data.get("mid_lab", "")
-                    elif value_data["valueId"] == "IP":
-                        # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
-                        ip_value = data.get("ip", "")
-                        if ip_value:
-                            try:
-                                # Proje kökü: backend klasörünün bir üstü
-                                project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                                images_dir = os.path.join(project_root, "database", "images")
-                                image_path = os.path.join(images_dir, f"{ip_value}.png")
-
-                                if os.path.exists(image_path):
-                                    with open(image_path, "rb") as img_file:
-                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
-
-                                    # Bu value item'i image tipine çevir
-                                    value_data["type"] = "image"
-                                    value_data["content"] = ""  # text kullanılmayacak
-                                    value_data["imageFile"] = encoded
-                                    # imageWidth / imageHeight ayarlıysa tasarımdaki değerler kullanılacak
-                                else:
-                                    # Dosya yoksa fallback olarak text yaz
-                                    value_data["content"] = ip_value
-                            except Exception as e:
-                                print(f"IP image load error: {e}")
-                                # Fallback: IP değerini text olarak göster
-                                value_data["content"] = data.get("ip", "")
-                    elif value_data["valueId"] == "MID":
-                        # MID varsa: MID M{mid_year}.png göster
+            for value_data in value_items:
+                if value_data["valueId"] == "SERIAL_NUMBER":
+                    value_data["content"] = self.application.utils.create_arcelik_serial_number(data.get("OemProductCode2"), data.get("SERIAL_NUMBER"))
+                elif value_data["valueId"] == "DATE_NUMBER":
+                    value_data["content"] = data.get("DATE_NUMBER", "")
+                elif value_data["valueId"] == "SITE_ID":
+                    value_data["content"] = data.get("SITE_ID", "")
+                elif value_data["valueId"] == "IMEI_NUMBER":
+                    value_data["content"] = data.get("IMEI_NUMBER", "")
+                elif value_data["valueId"] == "LAN_MAC":
+                    value_data["content"] = (data.get("LAN_MAC", "") or "").upper()
+                elif value_data["valueId"] == "BT_MAC":
+                    value_data["content"] = (data.get("BT_MAC", "") or "").upper()
+                elif value_data["valueId"] == "PRODUCT_CODE":
+                    value_data["content"] = data.get("PRODUCT_CODE", "")
+                elif value_data["valueId"] == "MODEL_NUMBER":
+                    value_data["content"] = data.get("MODEL_NUMBER", "")
+                elif value_data["valueId"] == "SYSTEM":
+                    value_data["content"] = data.get("SYSTEM", "")
+                elif value_data["valueId"] == "RATED_VOLTAGE":
+                    value_data["content"] = data.get("RATED_VOLTAGE", "")
+                elif value_data["valueId"] == "RATED_POWER":
+                    value_data["content"] = data.get("RATED_POWER", "")
+                elif value_data["valueId"] == "OPERATING_TEMP":
+                    value_data["content"] = data.get("OPERATING_TEMP", "")
+                elif value_data["valueId"] == "MANUFACTURER":
+                    value_data["content"] = data.get("MANUFACTURER", "")
+                elif value_data["valueId"] == "BT_NAME":
+                    value_data["content"] = data.get("BT_NAME", "")
+                elif value_data["valueId"] == "PIN_CODE":
+                    value_data["content"] = data.get("PIN_CODE", "")
+                elif value_data["valueId"] == "LOGO_NAME":
+                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                    images_dir = os.path.join(project_root, "database", "images")
+                    image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
+                    print(f"Image path: {image_path}")
+                    if os.path.exists(image_path):
+                        with open(image_path, "rb") as img_file:
+                            encoded = base64.b64encode(img_file.read()).decode("ascii")
+                        value_data["type"] = "image"
+                        value_data["content"] = ""
+                        value_data["imageFile"] = encoded
+                    else:
+                        print(f"Image not found: {image_path}")
+                elif value_data["valueId"] == "mid_lab":
+                    value_data["content"] = data.get("mid_lab", "")
+                elif value_data["valueId"] == "IP":
+                    # IP normalde image olacak: IP55 -> IP55.png, IP54 -> IP54.png
+                    ip_value = data.get("ip", "")
+                    if ip_value:
                         try:
+                            # Proje kökü: backend klasörünün bir üstü
                             project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
                             images_dir = os.path.join(project_root, "database", "images")
-                            
-                            has_mid = data.get("mid", False)
-                            mid_year = data.get("mid_year", "")
-                            
-                            if has_mid and mid_year:
-                                image_filename = f"MID M{mid_year}.png"
-                                image_path = os.path.join(images_dir, image_filename)
-                                
-                                if os.path.exists(image_path):
-                                    with open(image_path, "rb") as img_file:
-                                        encoded = base64.b64encode(img_file.read()).decode("ascii")
-                                    
-                                    value_data["type"] = "image"
-                                    value_data["content"] = ""
-                                    value_data["imageFile"] = encoded
-                                else:
-                                    # MID dosyası yoksa fallback olarak text yaz
-                                    value_data["type"] = "text"
-                                    value_data["imageFile"] = ""
-                                    value_data["content"] = f"MID M{mid_year}"
+                            image_path = os.path.join(images_dir, f"{ip_value}.png")
+
+                            if os.path.exists(image_path):
+                                with open(image_path, "rb") as img_file:
+                                    encoded = base64.b64encode(img_file.read()).decode("ascii")
+
+                                # Bu value item'i image tipine çevir
+                                value_data["type"] = "image"
+                                value_data["content"] = ""  # text kullanılmayacak
+                                value_data["imageFile"] = encoded
+                                # imageWidth / imageHeight ayarlıysa tasarımdaki değerler kullanılacak
                             else:
-                                # MID yoksa bu value item'ı boş bırak ve image'i temizle
+                                # Dosya yoksa fallback olarak text yaz
+                                value_data["content"] = ip_value
+                        except Exception as e:
+                            print(f"IP image load error: {e}")
+                            # Fallback: IP değerini text olarak göster
+                            value_data["content"] = data.get("ip", "")
+                elif value_data["valueId"] == "MID":
+                    # MID varsa: MID M{mid_year}.png göster
+                    try:
+                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                        images_dir = os.path.join(project_root, "database", "images")
+                        
+                        has_mid = data.get("mid", False)
+                        mid_year = data.get("mid_year", "")
+                        
+                        if has_mid and mid_year:
+                            image_filename = f"MID M{mid_year}.png"
+                            image_path = os.path.join(images_dir, image_filename)
+                            
+                            if os.path.exists(image_path):
+                                with open(image_path, "rb") as img_file:
+                                    encoded = base64.b64encode(img_file.read()).decode("ascii")
+                                
+                                value_data["type"] = "image"
+                                value_data["content"] = ""
+                                value_data["imageFile"] = encoded
+                            else:
+                                # MID dosyası yoksa fallback olarak text yaz
                                 value_data["type"] = "text"
                                 value_data["imageFile"] = ""
-                                value_data["content"] = ""
-                        except Exception as e:
-                            print(f"MID image load error: {e}")
+                                value_data["content"] = f"MID M{mid_year}"
+                        else:
+                            # MID yoksa bu value item'ı boş bırak ve image'i temizle
                             value_data["type"] = "text"
                             value_data["imageFile"] = ""
                             value_data["content"] = ""
-                    elif value_data["valueId"] == "OEM_COMPANY_NAME":
-                        value_data["content"] = data.get("OEM_COMPANY_NAME", "")
-                    elif value_data["valueId"] == "OemProductCode":
-                        value_data["content"] = data.get("OemProductCode", "")
-                    elif value_data["valueId"] == "OemProductCodeDefinition":
-                        value_data["content"] = data.get("OemProductCodeDefinition", "")
+                    except Exception as e:
+                        print(f"MID image load error: {e}")
+                        value_data["type"] = "text"
+                        value_data["imageFile"] = ""
+                        value_data["content"] = ""
+                elif value_data["valueId"] == "OEM_COMPANY_NAME":
+                    value_data["content"] = data.get("OEM_COMPANY_NAME", "")
+                elif value_data["valueId"] == "OemProductCode":
+                    value_data["content"] = data.get("OemProductCode", "")
+                elif value_data["valueId"] == "OemProductCodeDefinition":
+                    value_data["content"] = data.get("OemProductCodeDefinition", "")
 
-                # Barkod alanlarını seri numarası ile doldur
-                for barcode_item in barcode_items:
-                    barcode_item["data"] = data.get("SERIAL_NUMBER", "")
+            # Barkod alanlarını seri numarası ile doldur
+            for barcode_item in barcode_items:
+                barcode_item["data"] = data.get("SERIAL_NUMBER", "")
 
-                # Imei 18, 21
-                # Lan mac 19, 22
-                # bt mac 20, 23
+            # Imei 18, 21
+            # Lan mac 19, 22
+            # bt mac 20, 23
 
-                # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa ilgili textItems'ları filtrele
-                bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
-                lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
-                imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
-                
-                # Filtrelenecek text item id'lerini belirle
-                text_ids_to_filter = []
-                
-                # IMEI_NUMBER yoksa 18 ve 21'i filtrele
-                if not imei_exists:
-                    text_ids_to_filter.extend([18, 21])
-                
-                # LAN_MAC yoksa 19 ve 22'yi filtrele
-                if not lan_mac_exists:
-                    text_ids_to_filter.extend([19, 22])
-                
-                # BT_MAC yoksa 20 ve 23'ü filtrele
-                if not bt_mac_exists:
-                    text_ids_to_filter.extend([20, 23])
-                
-                # Filtreleme işlemini yap
-                if text_ids_to_filter:
-                    text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
+            # BT_MAC, LAN_MAC, IMEI_NUMBER yoksa ilgili textItems'ları filtrele
+            bt_mac_exists = bool(data.get("BT_MAC") and data.get("BT_MAC", "").strip())
+            lan_mac_exists = bool(data.get("LAN_MAC") and data.get("LAN_MAC", "").strip())
+            imei_exists = bool(data.get("IMEI_NUMBER") and data.get("IMEI_NUMBER", "").strip())
+            
+            # Filtrelenecek text item id'lerini belirle
+            text_ids_to_filter = []
+            
+            # IMEI_NUMBER yoksa 18 ve 21'i filtrele
+            if not imei_exists:
+                text_ids_to_filter.extend([18, 21])
+            
+            # LAN_MAC yoksa 19 ve 22'yi filtrele
+            if not lan_mac_exists:
+                text_ids_to_filter.extend([19, 22])
+            
+            # BT_MAC yoksa 20 ve 23'ü filtrele
+            if not bt_mac_exists:
+                text_ids_to_filter.extend([20, 23])
+            
+            # Filtreleme işlemini yap
+            if text_ids_to_filter:
+                text_items = [item for item in text_items if item.get("id") not in text_ids_to_filter]
 
-                printers = self.application.printers.search_printers_by_name(printer_name)
-                width = printers[0]["width"]
-                height = printers[0]["height"]
-                dpi = printers[0]["dpi"]
-                name = "test"
+            printers = self.application.printers.search_printers_by_name(printer_name)
+            width = printers[0]["width"]
+            height = printers[0]["height"]
+            dpi = printers[0]["dpi"]
+            name = "test"
 
-                generator = BitmapGenerator(
-                    width, 
-                    height, 
-                    dpi,
-                    f"bitmap_{ip}_{name}.bmp"
-                )
-                generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
-                bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
-                if os.path.exists(bitmap_path):
-                    success = printer_manager.print_bmp(ip, bitmap_path, width, height)
-                    if success:
-                        return jsonify({"message": "Bitmap printed successfully"})
-                    else:
-                        return jsonify({"error": "Failed to print bitmap"}), 500
+            generator = BitmapGenerator(
+                width, 
+                height, 
+                dpi,
+                f"bitmap_{ip}_{name}.bmp"
+            )
+            generator.create_from_frontend_data(text_items, value_items, icon_items, barcode_items)
+            bitmap_path = os.path.join(os.getcwd(), f"bitmap_{ip}_{name}.bmp")
+            if os.path.exists(bitmap_path):
+                success = printer_manager.print_bmp(ip, bitmap_path, width, height)
+                if success:
+                    return jsonify({"message": "Bitmap printed successfully"})
                 else:
-                    return jsonify({"error": "Failed to generate bitmap"}), 500
-            except Exception as e:
-                return jsonify({"error": str(e)}), 500
+                    return jsonify({"error": "Failed to print bitmap"}), 500
+            else:
+                return jsonify({"error": "Failed to generate bitmap"}), 500
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
 
         @self.app.route("/api/testApplication/print", methods=['POST'])
