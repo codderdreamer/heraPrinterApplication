@@ -333,7 +333,7 @@ class FlaskModule:
                 print(f"Logo endpoint error: {e}")
                 return jsonify({"error": str(e)}), 500
 
-        def print_yan_etiket_normal(self, is_arcelik, payload, sap_data):
+    def print_yan_etiket_normal(self, is_arcelik, payload, sap_data):
             try:
                 if is_arcelik:
                     sap_data["LOGO_NAME"] = "hera_logo"
@@ -576,7 +576,7 @@ class FlaskModule:
             except Exception as e:
                 return jsonify({"error": str(e)}), 500
 
-        def print_yan_etiket_arcelik(self, payload, sap_data):
+    def print_yan_etiket_arcelik(self, payload, sap_data):
             try:
                 sap_data["LOGO_NAME"] = "arcelikbywat_logo"
 
