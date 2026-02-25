@@ -1021,7 +1021,7 @@ class FlaskModule:
 
             # Barkod alanlarını seri numarası ile doldur
             for barcode_item in barcode_items:
-                barcode_item["data"] = data.get("SERIAL_NUMBER", "")
+                barcode_item["data"] = self.application.utils.create_arcelik_serial_number(data.get("OemProductCode2"), data.get("SERIAL_NUMBER"))
 
             # Imei 18, 21
             # Lan mac 19, 22
