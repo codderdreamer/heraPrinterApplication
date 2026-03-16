@@ -346,10 +346,10 @@ class FlaskModule:
                 if not sap_data:
                     return jsonify({"error": "SAP data not found"}), 404
 
-                is_arcelik = sap_data.get("LOGO_NAME") == "arcelikbywat_logo"
+                print_two_etiket = self.application.utils.is_print_two_etiket(sap_data)
 
                 # Normal etiketi yazdır
-                result_normal = self.print_yan_etiket_normal(is_arcelik, payload, sap_data)
+                result_normal = self.print_yan_etiket_normal(payload, sap_data)
                 # Helper fonksiyon tuple döndürüyorsa (response, status_code) kontrol et
                 if isinstance(result_normal, tuple):
                     response, status_code = result_normal
@@ -358,7 +358,7 @@ class FlaskModule:
                         return result_normal
                 
                 # Eğer arçelik ise arçelik etiketini de yazdır
-                if is_arcelik:
+                if print_two_etiket:
                     result_arcelik = self.print_yan_etiket_arcelik(payload, sap_data)
                     if isinstance(result_arcelik, tuple):
                         response, status_code = result_arcelik
@@ -591,11 +591,8 @@ class FlaskModule:
             # Serve React app for all other routes
             return render_template("index.html")
 
-    def print_yan_etiket_normal(self, is_arcelik, payload, sap_data):
+    def print_yan_etiket_normal(self, payload, sap_data):
         try:
-            if is_arcelik:
-                sap_data["LOGO_NAME"] = "hera_logo"
-
             printer_name = "ARKA MASA"
 
             serial_number = payload.get("SERIAL_NUMBER") or ""

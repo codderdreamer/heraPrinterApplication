@@ -20,6 +20,16 @@ class Utils:
         self.sap_username = "manager"  # yusufcana sorulacak
         self.sap_password = "1302"  # yusufcana sorulacak
 
+    def is_print_two_etiket(self, sap_data):
+        try:
+            if sap_data.get("LOGO_NAME") == "arcelikbywat_logo" or sap_data.get("LOGO_NAME") == "wat_logo":
+                return True
+            else:
+                return False
+        except Exception as e:
+            print(f"is_print_two_etiket error: {e}")
+            return False
+
     def sap_login(self):
         try:
             login_payload = {
@@ -214,8 +224,8 @@ class Utils:
 
     def print_paket(self, serial_number, sap_data):
         try:
-            is_arcelik = sap_data.get("LOGO_NAME") == "arcelikbywat_logo"
-            if is_arcelik:
+            print_two_etiket = self.is_print_two_etiket(sap_data)
+            if print_two_etiket:
                 printer_name = "ARÇELİK PAKET"
             else:
                 printer_name = "PAKET"
@@ -284,7 +294,7 @@ class Utils:
                 if barcode_item["sira"] == 1:
                     barcode_item["data"] = sap_data.get("SERIAL_NUMBER", "")
                 elif barcode_item["sira"] == 2:
-                    if is_arcelik:
+                    if print_two_etiket:
                         barcode_item["data"] = self.create_arcelik_serial_number(sap_data.get("OemProductCode2"), sap_data.get("SERIAL_NUMBER"))
                     else:
                         barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
