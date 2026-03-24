@@ -833,8 +833,6 @@ class FlaskModule:
 
     def print_yan_etiket_arcelik(self, payload, sap_data):
         try:
-            sap_data["LOGO_NAME"] = "arcelikbywat_logo"
-
             printer_name = "ARÇELİK ARKA MASA"
 
             serial_number = payload.get("SERIAL_NUMBER") or ""
