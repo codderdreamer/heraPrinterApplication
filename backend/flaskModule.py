@@ -640,13 +640,16 @@ class FlaskModule:
             }
 
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
+            print(f"[print_yan_etiket_normal] printer_name: {printer_name}, ip: {ip}")
             # Printer name'e göre bitmap ayarlarını al
             settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
             if not settings_data:
+                print(f"[print_yan_etiket_normal] Default settings not found for printer: {printer_name}, trying IP: {ip}")
                 # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
                 settings_data = self.application.printers.get_printer_data_by_ip(ip)
             if not settings_data:
-                return jsonify({"error": "Bitmap settings not found"}), 404
+                print(f"[print_yan_etiket_normal] Bitmap settings not found for printer: {printer_name}, ip: {ip}")
+                return jsonify({"error": f"Bitmap settings not found for printer: {printer_name}"}), 404
             settings_data_json = json.loads(settings_data)
             text_items = settings_data_json.get('textItems', [])
             value_items = settings_data_json.get('valueItems', [])
@@ -880,13 +883,16 @@ class FlaskModule:
             }
 
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
+            print(f"[print_yan_etiket_arcelik] printer_name: {printer_name}, ip: {ip}")
             # Printer name'e göre bitmap ayarlarını al
             settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
             if not settings_data:
+                print(f"[print_yan_etiket_arcelik] Default settings not found for printer: {printer_name}, trying IP: {ip}")
                 # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
                 settings_data = self.application.printers.get_printer_data_by_ip(ip)
             if not settings_data:
-                return jsonify({"error": "Bitmap settings not found"}), 404
+                print(f"[print_yan_etiket_arcelik] Bitmap settings not found for printer: {printer_name}, ip: {ip}")
+                return jsonify({"error": f"Bitmap settings not found for printer: {printer_name}"}), 404
             settings_data_json = json.loads(settings_data)
             text_items = settings_data_json.get('textItems', [])
             value_items = settings_data_json.get('valueItems', [])
