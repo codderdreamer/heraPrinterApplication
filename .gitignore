@@ -30,6 +30,10 @@ MANIFEST
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
+# Bu iki spec dosyasi exe derlemek icin gerekli, git'te kalsin:
+#   python -m PyInstaller --noconfirm --distpath HeraPrinterApp_Distribution HeraPrinterApp.spec
+!HeraPrinterApp.spec
+!FordKurulum.spec
 
 # Installer logs
 pip-log.txt

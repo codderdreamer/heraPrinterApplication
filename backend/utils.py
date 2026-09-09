@@ -3,6 +3,7 @@ import json
 import base64
 import requests
 import urllib3
+import sys
 import time
 from datetime import datetime
 from backend.bitmapGenerator import BitmapGenerator
@@ -20,15 +21,40 @@ class Utils:
         self.sap_username = "manager"  # yusufcana sorulacak
         self.sap_password = "1302"  # yusufcana sorulacak
 
-    def is_print_two_etiket(self, sap_data):
+    # LOGO_NAME -> OEM etiket öneki. Yazıcılar bu önekle aranır:
+    # "{önek} ÖN MASA", "{önek} ARKA MASA", "{önek} PAKET"
+    OEM_LABEL_PREFIXES = {
+        "arcelikbywat_logo": "ARÇELİK",
+        "wat_logo": "ARÇELİK",
+        "ford_logo": "FORD",
+    }
+
+    def get_oem_label_prefix(self, sap_data):
+        """OEM etiketi de basılacak firmalar için yazıcı adı önekini döndürür, yoksa None."""
         try:
-            if sap_data.get("LOGO_NAME") == "arcelikbywat_logo" or sap_data.get("LOGO_NAME") == "wat_logo":
-                return True
-            else:
-                return False
+            return self.OEM_LABEL_PREFIXES.get(sap_data.get("LOGO_NAME"))
         except Exception as e:
-            print(f"is_print_two_etiket error: {e}")
-            return False
+            print(f"get_oem_label_prefix error: {e}")
+            return None
+
+    def get_image_path(self, filename):
+        """Logo/ikon dosyasının tam yolu.
+
+        Önce exe'nin yanındaki database/images klasörüne bakar (yeni logo eklemek için
+        yeniden derlemek gerekmesin), bulamazsa exe'ye gömülü olana düşer. Hiçbirinde
+        yoksa gömülü yolu döndürür; çağıran taraf os.path.exists ile zaten kontrol ediyor.
+        """
+        adaylar = []
+        if getattr(sys, "frozen", False):
+            adaylar.append(os.path.join(os.path.dirname(sys.executable), "database", "images"))
+        proje_koku = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        adaylar.append(os.path.join(proje_koku, "database", "images"))
+
+        for klasor in adaylar:
+            yol = os.path.join(klasor, filename)
+            if os.path.exists(yol):
+                return yol
+        return os.path.join(adaylar[-1], filename)
 
     def sap_login(self):
         try:
@@ -224,12 +250,14 @@ class Utils:
 
     def print_paket(self, serial_number, sap_data):
         try:
-            print_two_etiket = self.is_print_two_etiket(sap_data)
-            if print_two_etiket:
-                printer_name = "ARÇELİK PAKET"
-            else:
-                printer_name = "PAKET"
+            oem_prefix = self.get_oem_label_prefix(sap_data)
+            printer_name = f"{oem_prefix} PAKET" if oem_prefix else "PAKET"
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
+            if not ip and oem_prefix:
+                # OEM paket yazıcısı tanımlı değilse standart paket yazıcısına düş
+                print(f"print_paket: {printer_name} bulunamadı, PAKET kullanılıyor")
+                printer_name = "PAKET"
+                ip = self.application.printers.get_printer_ip_by_name(printer_name)
             # Printer name'e göre bitmap ayarlarını al
             settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
             if not settings_data:
@@ -273,9 +301,7 @@ class Utils:
                 elif value_data["valueId"] == "LOGO_NAME":
                     logo_name = sap_data.get("LOGO_NAME", "")
                     if logo_name:
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        image_path = os.path.join(images_dir, f"{logo_name}.png")
+                        image_path = self.get_image_path(f"{logo_name}.png")
                         if os.path.exists(image_path):
                             with open(image_path, "rb") as img_file:
                                 encoded = base64.b64encode(img_file.read()).decode("ascii")
@@ -294,7 +320,7 @@ class Utils:
                 if barcode_item["sira"] == 1:
                     barcode_item["data"] = sap_data.get("SERIAL_NUMBER", "")
                 elif barcode_item["sira"] == 2:
-                    if print_two_etiket:
+                    if oem_prefix:
                         barcode_item["data"] = self.create_arcelik_serial_number(sap_data.get("OemProductCode2"), sap_data.get("SERIAL_NUMBER"))
                     else:
                         barcode_item["data"] = sap_data.get("EAN_NUMBER", "")
@@ -367,9 +393,7 @@ class Utils:
                 elif value_data["valueId"] == "LOGO_NAME":
                     logo_name = sap_data.get("LOGO_NAME", "")
                     if logo_name:
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        image_path = os.path.join(images_dir, f"{logo_name}.png")
+                        image_path = self.get_image_path(f"{logo_name}.png")
                         if os.path.exists(image_path):
                             with open(image_path, "rb") as img_file:
                                 encoded = base64.b64encode(img_file.read()).decode("ascii")

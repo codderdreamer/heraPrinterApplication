@@ -346,7 +346,7 @@ class FlaskModule:
                 if not sap_data:
                     return jsonify({"error": "SAP data not found"}), 404
 
-                print_two_etiket = self.application.utils.is_print_two_etiket(sap_data)
+                oem_prefix = self.application.utils.get_oem_label_prefix(sap_data)
 
                 # Normal etiketi yazdır
                 result_normal = self.print_yan_etiket_normal(payload, sap_data)
@@ -357,15 +357,15 @@ class FlaskModule:
                         # Hata durumu - hata mesajını döndür
                         return result_normal
                 
-                # Eğer arçelik ise arçelik etiketini de yazdır
-                if print_two_etiket:
-                    result_arcelik = self.print_yan_etiket_arcelik(payload, sap_data)
-                    if isinstance(result_arcelik, tuple):
-                        response, status_code = result_arcelik
+                # OEM firmasıysa (ARÇELİK, FORD, ...) ikinci etiketi de yazdır
+                if oem_prefix:
+                    result_oem = self.print_yan_etiket_oem(payload, sap_data, oem_prefix)
+                    if isinstance(result_oem, tuple):
+                        response, status_code = result_oem
                         if status_code != 200:
                             # Hata durumu
-                            return result_arcelik
-                    return jsonify({"message": "Both labels printed successfully (normal + arcelik)"})
+                            return result_oem
+                    return jsonify({"message": f"Both labels printed successfully (normal + {oem_prefix})"})
                 else:
                     return jsonify({"message": "Label printed successfully"})
                     
@@ -695,9 +695,7 @@ class FlaskModule:
                 elif value_data["valueId"] == "PIN_CODE":
                     value_data["content"] = data.get("PIN_CODE", "")
                 elif value_data["valueId"] == "LOGO_NAME":
-                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    images_dir = os.path.join(project_root, "database", "images")
-                    image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
+                    image_path = self.application.utils.get_image_path(f"{data.get('LOGO_NAME', '')}.png")
                     print(f"Image path: {image_path}")
                     if os.path.exists(image_path):
                         with open(image_path, "rb") as img_file:
@@ -714,10 +712,7 @@ class FlaskModule:
                     ip_value = data.get("ip", "")
                     if ip_value:
                         try:
-                            # Proje kökü: backend klasörünün bir üstü
-                            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                            images_dir = os.path.join(project_root, "database", "images")
-                            image_path = os.path.join(images_dir, f"{ip_value}.png")
+                            image_path = self.application.utils.get_image_path(f"{ip_value}.png")
 
                             if os.path.exists(image_path):
                                 with open(image_path, "rb") as img_file:
@@ -738,15 +733,12 @@ class FlaskModule:
                 elif value_data["valueId"] == "MID":
                     # MID varsa: MID M{mid_year}.png göster
                     try:
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        
                         has_mid = data.get("mid", False)
                         mid_year = data.get("mid_year", "")
                         
                         if has_mid and mid_year:
                             image_filename = f"MID M{mid_year}.png"
-                            image_path = os.path.join(images_dir, image_filename)
+                            image_path = self.application.utils.get_image_path(image_filename)
                             
                             if os.path.exists(image_path):
                                 with open(image_path, "rb") as img_file:
@@ -834,9 +826,9 @@ class FlaskModule:
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
-    def print_yan_etiket_arcelik(self, payload, sap_data):
+    def print_yan_etiket_oem(self, payload, sap_data, prefix):
         try:
-            printer_name = "ARÇELİK ARKA MASA"
+            printer_name = f"{prefix} ARKA MASA"
 
             serial_number = payload.get("SERIAL_NUMBER") or ""
             if not serial_number:
@@ -847,9 +839,9 @@ class FlaskModule:
                 return jsonify({"error": "Test device is required"}), 400
 
             if test_device == 2:
-                printer_name = "ARÇELİK ARKA MASA"
+                printer_name = f"{prefix} ARKA MASA"
             elif test_device == 1:
-                printer_name = "ARÇELİK ÖN MASA"
+                printer_name = f"{prefix} ÖN MASA"
             else:
                 return jsonify({"error": "Invalid test device"}), 400
 
@@ -883,15 +875,15 @@ class FlaskModule:
             }
 
             ip = self.application.printers.get_printer_ip_by_name(printer_name)
-            print(f"[print_yan_etiket_arcelik] printer_name: {printer_name}, ip: {ip}")
+            print(f"[print_yan_etiket_oem] printer_name: {printer_name}, ip: {ip}")
             # Printer name'e göre bitmap ayarlarını al
             settings_data = self.application.printers.get_printer_data_by_name(printer_name, "default")
             if not settings_data:
-                print(f"[print_yan_etiket_arcelik] Default settings not found for printer: {printer_name}, trying IP: {ip}")
+                print(f"[print_yan_etiket_oem] Default settings not found for printer: {printer_name}, trying IP: {ip}")
                 # Eğer default yoksa, IP'ye göre ilk bulunan ayarı al (geriye dönük uyumluluk)
                 settings_data = self.application.printers.get_printer_data_by_ip(ip)
             if not settings_data:
-                print(f"[print_yan_etiket_arcelik] Bitmap settings not found for printer: {printer_name}, ip: {ip}")
+                print(f"[print_yan_etiket_oem] Bitmap settings not found for printer: {printer_name}, ip: {ip}")
                 return jsonify({"error": f"Bitmap settings not found for printer: {printer_name}"}), 404
             settings_data_json = json.loads(settings_data)
             text_items = settings_data_json.get('textItems', [])
@@ -938,9 +930,7 @@ class FlaskModule:
                 elif value_data["valueId"] == "PIN_CODE":
                     value_data["content"] = data.get("PIN_CODE", "")
                 elif value_data["valueId"] == "LOGO_NAME":
-                    project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                    images_dir = os.path.join(project_root, "database", "images")
-                    image_path = os.path.join(images_dir, f"{data.get('LOGO_NAME', '')}.png")
+                    image_path = self.application.utils.get_image_path(f"{data.get('LOGO_NAME', '')}.png")
                     print(f"Image path: {image_path}")
                     if os.path.exists(image_path):
                         with open(image_path, "rb") as img_file:
@@ -957,10 +947,7 @@ class FlaskModule:
                     ip_value = data.get("ip", "")
                     if ip_value:
                         try:
-                            # Proje kökü: backend klasörünün bir üstü
-                            project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                            images_dir = os.path.join(project_root, "database", "images")
-                            image_path = os.path.join(images_dir, f"{ip_value}.png")
+                            image_path = self.application.utils.get_image_path(f"{ip_value}.png")
 
                             if os.path.exists(image_path):
                                 with open(image_path, "rb") as img_file:
@@ -981,15 +968,12 @@ class FlaskModule:
                 elif value_data["valueId"] == "MID":
                     # MID varsa: MID M{mid_year}.png göster
                     try:
-                        project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-                        images_dir = os.path.join(project_root, "database", "images")
-                        
                         has_mid = data.get("mid", False)
                         mid_year = data.get("mid_year", "")
                         
                         if has_mid and mid_year:
                             image_filename = f"MID M{mid_year}.png"
-                            image_path = os.path.join(images_dir, image_filename)
+                            image_path = self.application.utils.get_image_path(image_filename)
                             
                             if os.path.exists(image_path):
                                 with open(image_path, "rb") as img_file:
